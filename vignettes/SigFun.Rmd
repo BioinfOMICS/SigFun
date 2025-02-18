@@ -44,7 +44,7 @@ BiocManager::install()
 ```
 
 Once the core Bioconductor packages have been installed, we can begin the 
-installation of the lipidTrend package.
+installation of the SigFun package.
 
 ```{r install_package, eval=FALSE}
 if (!requireNamespace("BiocManager", quietly=TRUE))
