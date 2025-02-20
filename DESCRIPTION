@@ -18,12 +18,15 @@ License: MIT + file LICENSE
 URL: https://github.com/TMSWCChenglab/SigFun
 BugReports: https://github.com/TMSWCChenglab/SigFun/issues
 LazyData: FALSE
-biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG
-Depends:
-    R (>= 4.4.0)
-Imports: dplyr, SummarizedExperiment, magrittr, cowplot, fgsea, ggplot2, ggpubr, readr, tibble, tidyr, scales, stringr
-Suggests: devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle, S4Vectors
-Enhances: data.table
+biocViews: Software, BiologicalQuestion, FunctionalPrediction,
+        Pathways, BiomedicalInformatics, Reactome, KEGG
+Depends: R (>= 4.4.0)
+Imports: methods, S4Vectors, data.table, dplyr, SummarizedExperiment,
+        magrittr, cowplot, fgsea, ggplot2, ggpubr, readr, tibble,
+        tidyr, scales, stringr
+Suggests: devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr,
+        tidyverse, BiocStyle
+Enhances:
 VignetteBuilder: knitr
 Config/Needs/website: usethis, servr
 Config/potools/style: explicit
@@ -33,3 +36,14 @@ BuildVignettes: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Collate: 'GSEA_data.R' 'demo.R' 'globals.R' 'pathway_all.R' 'utility.R'
+        'plot_bar.R' 'plot_heat.R' 'sig2GSEA.R' 'sigCor.R' 'sig2Fun.R'
+        'sig2GSEA_input.R' 'sigFun.R' 'test_pathways.R'
+NeedsCompilation: no
+Packaged: 2025-02-20 00:41:59 UTC; martinliu
+Author: Wei-Chung Cheng [aut, cre, cph]
+    (<https://orcid.org/0000-0002-1229-4857>),
+  Chia-Hsin Liu [aut, ctb],
+  Pei-Chun Shen [aut, ctb],
+  Wen-Jen Lin [aut, ctb]
+Maintainer: Wei-Chung Cheng <chenglabomics@gmail.com>
