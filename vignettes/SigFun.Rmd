@@ -21,15 +21,35 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r style, echo = FALSE, results = 'asis'} 
+```{r style, echo=FALSE, results='asis'} 
 BiocStyle::markdown()
 ```
 
-# Installation 
+# Table of contents
+[Introduction](#intro)
+[Installation](#install)
+[Input data demonstration](#input)
+[SigFun one-click command](one-click)
+[Step 1. sigCor](#sigcor)
+[Step 2. sig2GSEA](#gsea)
+[Step 3. plot_bar](#plot_bar)
+[Step 4. plot_heat](#plot_heat)
+[Session info](#info)
+
+# Introduction {#intro}
+    SigFun is an R package designed to streamline the analysis of 
+    transcriptomic data in relation to specific gene signatures. It provides an 
+    automated workflow for analyzing gene signatures and their functional 
+    implications in transcriptomic datasets. The package integrates Gene Set 
+    Enrichment Analysis (GSEA) with visualization tools to help researchers 
+    understand the biological pathways and processes associated with their gene 
+    signatures of interest.
+
+# Installation  {#install}
 Here is the procedures of running the **SigFun** package on your system. 
 We assume that you have already installed the R program (see the R project at 
 [http://www.r-project.org](http://www.r-project.org)  and are familiar with it. 
-You need to have R 4.4.0 or a later version installed for running LipidSigR.
+You need to have R 4.4.0 or a later version installed for running SigFun.
 
 Our package is available at the Bioconductor repository 
 [http://www.bioconductor.org](http://www.bioconductor.org). 
@@ -55,7 +75,7 @@ BiocManager::install("SigFun")
 After conducting the above step, now you can load in our package and start 
 using it!
 
-```{r load, message = FALSE}
+```{r load, message=FALSE}
 library(SigFun)
 library(BiocStyle)
 library(S4Vectors)
@@ -66,15 +86,15 @@ library(dplyr)
 library(utils)
 ```
 
-# Input data demonstration
+# Input data demonstration {#input}
 Load the demo data and investigate how to prepare the input
 ```{r abundance}
-rm(list = ls())
+rm(list=ls())
 data("demo")
 slotNames(SE_data)
 ```
 
-# Input demonstration
+# Input preparation
 Prepare you data as the demo data
 ```{r char_table}
 # Transcriptome dataset
@@ -97,7 +117,7 @@ SE_data <- SummarizedExperiment::SummarizedExperiment(
     row.names=rowData.data$sample_id), colData=colData.data)
 ```
 
-# SigFun one-click command
+# SigFun one-click command {#one-click}
 SigFun accepts the following input parameters:
 
 - `SE_data`: A SummarizedExperiment object containing your expression data
@@ -114,66 +134,65 @@ SigFun accepts the following input parameters:
 ```{r SigFun}
 # Set output directory
 output_path <- tempdir()
-
+dir.create(output_path,TRUE)
 # Run SigFun analysis
-res <- SigFun::SigFun(
-    SE_data = SE_data,
-    ranking.method = "stat",
-    species = "human",
-    cor.method = "spearman",
-    pathways.all = pathways.all,
-    output_path = output_path,
-    topN = 10,
-    Z.transform = FALSE,
-    significat_type = "pval",
-    strings = c("KEGG"),
-    plot_out = TRUE
+res <- sig2Fun(
+    SE_data=SE_data,
+    ranking.method="stat",
+    species="human",
+    cor.method="spearman",
+    pathways.all=pathways.all,
+    output_path=output_path,
+    topN=10,
+    Z.transform=FALSE,
+    significat_type="pval",
+    strings=c("KEGG"),
+    plot_out=TRUE
 )
 ```
 
-# Step 1. SigCor: run gene expression correlation with signature patterns
-
+# Step 1. SigCor: run gene correlation with signature patterns {#sigcor}
 ```{r SigCor}
-ranking.method = "stat"
+ranking.method="stat"
 species="human"
-cor.method = "spearman"
+cor.method="spearman"
 topN=10
 Z.transform=FALSE
 significat_type="pval"
 strings=c("KEGG")
-SE_data.cor <- SigFun::SigCor(SE_data=SE_data, cor.method=cor.method,
+SE_data.cor <- sigCor(SE_data=SE_data, cor.method=cor.method,
                             output_path=output_path, Z.transform=Z.transform)
 ```
 
-# Step 2. Sig2GSEA: Run fGSEA using gene ranking values load corRES
+# Step 2. Sig2GSEA: Run fGSEA using gene ranking values load corRES {#gsea}
 
 ```{r Sig2GSEA}
-SE_data.fgsea <- SigFun::Sig2GSEA(SE_data.cor=SE_data.cor,
+SE_data.fgsea <- sig2GSEA(SE_data.cor=SE_data.cor,
                         ranking.method=ranking.method,
                         output_path=output_path, 
                         pathways.all=pathways.all)
 ```
 
-# Step 3. plot_bar: barplot for visualization
+# Step 3. plot_bar: barplot for visualization {#plot_bar}
 
 ```{r plot.bar}
-barplots <- SigFun::plot_bar(SE_data.fgsea=SE_data.fgsea, 
+barplots <- plot_bar(SE_data.fgsea=SE_data.fgsea, 
                         output_path=output_path,
                         topN=topN, significat_type=significat_type, 
-                        strings = strings)
+                        strings=strings)
 ```
 
-# Step 3. plot_heat: heatmap for visualization
+# Step 4. plot_heat: heatmap for visualization {#plot_heat}
 
 ```{r heatmap}
-heatmap <- SigFun::plot_heat(SE_data.fgsea=SE_data.fgsea, 
+heatmap <- plot_heat(SE_data.fgsea=SE_data.fgsea, 
                         output_path=output_path,
                         strings=strings, significat_type=significat_type, 
                         topN=topN, pathways.all=pathways.all, 
                         ranking.method=ranking.method)
 ```
 
-# Session info
+# Session info {#info}
 ```{r sessionInfo, echo=FALSE}
 sessionInfo()
 ```
