@@ -1,0 +1,198 @@
+---
+title: "SigFun"
+author:
+- name: Wei-Chung Cheng
+  affiliation: China Medical University
+output:
+  BiocStyle::html_document:
+    toc_float: true
+abstract: >
+    SigFun is an R package designed to streamline the analysis of 
+    transcriptomic data in relation to specific gene signatures. It provides an 
+    automated workflow for analyzing gene signatures and their functional 
+    implications in transcriptomic datasets. The package integrates Gene Set 
+    Enrichment Analysis (GSEA) with visualization tools to help researchers 
+    understand the biological pathways and processes associated with their gene 
+    signatures of interest.
+
+vignette: >
+  %\VignetteIndexEntry{SigFun}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r style, echo=FALSE, results='asis'} 
+BiocStyle::markdown()
+```
+
+# Table of contents
+[Introduction](#intro)
+[Installation](#install)
+[Input data demonstration](#input)
+[SigFun one-click command](one-click)
+[Step 1. sigCor](#sigcor)
+[Step 2. sig2GSEA](#gsea)
+[Step 3. plot_bar](#plot_bar)
+[Step 4. plot_heat](#plot_heat)
+[Session info](#info)
+
+# Introduction {#intro}
+    SigFun is an R package designed to streamline the analysis of 
+    transcriptomic data in relation to specific gene signatures. It provides an 
+    automated workflow for analyzing gene signatures and their functional 
+    implications in transcriptomic datasets. The package integrates Gene Set 
+    Enrichment Analysis (GSEA) with visualization tools to help researchers 
+    understand the biological pathways and processes associated with their gene 
+    signatures of interest.
+
+# Installation  {#install}
+Here is the procedures of running the **SigFun** package on your system. 
+We assume that you have already installed the R program (see the R project at 
+[http://www.r-project.org](http://www.r-project.org)  and are familiar with it. 
+You need to have R 4.4.0 or a later version installed for running SigFun.
+
+Our package is available at the Bioconductor repository 
+[http://www.bioconductor.org](http://www.bioconductor.org). 
+To install our package, first, you need to install the core Bioconductor 
+packages. If you have already installed the Bioconductor packages on your 
+system, you can skip the following step below.
+
+```{r install_Bioconductor, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+```
+
+Once the core Bioconductor packages have been installed, we can begin the 
+installation of the SigFun package.
+
+```{r install_package, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install("SigFun")
+``` 
+
+After conducting the above step, now you can load in our package and start 
+using it!
+
+```{r load, message=FALSE}
+library(SigFun)
+library(BiocStyle)
+library(S4Vectors)
+```
+
+```{r load_package, message=FALSE, echo=FALSE}
+library(dplyr)
+library(utils)
+```
+
+# Input data demonstration {#input}
+Load the demo data and investigate how to prepare the input
+```{r abundance}
+rm(list=ls())
+data("demo")
+slotNames(SE_data)
+```
+
+# Input preparation
+Prepare you data as the demo data
+```{r char_table}
+# Transcriptome dataset
+GENE_MAT <- as.data.frame(SummarizedExperiment::assay(SE_data))
+# Signature score
+SIG_MAT <- as.data.frame(SummarizedExperiment::rowData(SE_data))
+# gene symbol mapping table (ensemble ID and official gene symbol lookup table)
+mapping <- as.data.frame(SummarizedExperiment::colData(SE_data))
+```
+
+Construct SummarizedExperiment object from your data 
+```{r build_se}
+assay.data <- GENE_MAT
+rowData.data <- SIG_MAT
+colData.data <- mapping
+
+SE_data <- SummarizedExperiment::SummarizedExperiment(
+    assays=list(abundance=as.matrix(assay.data)),
+    rowData=S4Vectors::DataFrame(rowData.data, 
+    row.names=rowData.data$sample_id), colData=colData.data)
+```
+
+# SigFun one-click command {#one-click}
+SigFun accepts the following input parameters:
+
+- `SE_data`: A SummarizedExperiment object containing your expression data
+- `ranking.method`: Method for ranking genes ("stat" or other supported methods)
+- `species`: Organism of study (e.g., "human")
+- `cor.method`: Correlation method for analysis (e.g., "spearman")
+- `pathways_all`: Collection of pathways for enrichment analysis
+- `output_path`: Directory for saving results
+- `topN`: Number of top pathways to return
+- `Z.transform`: Logical indicating whether to perform Z-transformation
+- `significat_type`: Type of significance measure ("pval" or alternatives)
+- `strings`: Vector of pathway databases to query (e.g., "GOBP")
+
+```{r SigFun}
+# Set output directory
+output_path <- tempdir()
+dir.create(output_path, TRUE)
+# Run SigFun analysis
+res <- sig2Fun(
+    SE_data=SE_data,
+    ranking.method="stat",
+    species="human",
+    cor.method="spearman",
+    pathways_all=pathways.all,
+    output_path=output_path,
+    topN=10,
+    Z.transform=FALSE,
+    significat_type="pval",
+    strings=c("KEGG"),
+    plot_out=TRUE
+)
+```
+
+# Step 1. SigCor: run gene correlation with signature patterns {#sigcor}
+```{r SigCor}
+ranking.method="stat"
+species="human"
+cor.method="spearman"
+topN=10
+Z.transform=FALSE
+significat_type="pval"
+strings=c("KEGG")
+SE_data.cor <- sigCor(SE_data=SE_data, cor.method=cor.method,
+                            output_path=output_path, Z.transform=Z.transform)
+```
+
+# Step 2. Sig2GSEA: Run fGSEA using gene ranking values load corRES {#gsea}
+
+```{r Sig2GSEA}
+SE_data.fgsea <- sig2GSEA(SE_data.cor=SE_data.cor,
+                        ranking.method=ranking.method,
+                        output_path=output_path, 
+                        pathways.all=pathways.all)
+```
+
+# Step 3. plot_bar: barplot for visualization {#plot_bar}
+
+```{r plot.bar}
+barplots <- plot_bar(SE_data.fgsea=SE_data.fgsea, 
+                        output_path=output_path,
+                        topN=topN, significat_type=significat_type, 
+                        strings=strings)
+```
+
+# Step 4. plot_heat: heatmap for visualization {#plot_heat}
+
+```{r heatmap}
+heatmap <- plot_heat(SE_data.fgsea=SE_data.fgsea, 
+                        output_path=output_path,
+                        strings=strings, significat_type=significat_type, 
+                        topN=topN, pathways.all=pathways.all, 
+                        ranking.method=ranking.method)
+```
+
+# Session info {#info}
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```
