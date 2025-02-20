@@ -1,41 +1,47 @@
+#' @importFrom dplyr filter
+#' @importFrom data.table fwrite
+#' @importFrom stats sd
+#' @importFrom scales rescale
+#' @importFrom cowplot ggdraw draw_text
+#' @keywords internal
 .summary_gsea <- function(fgseaRes, ranking.method='stat', output_path){
     fgseaRes_pvalue <- fgseaRes %>% dplyr::filter(pval<0.05)
     fgseaRes_qvalue <- fgseaRes %>% dplyr::filter(padj<0.05)
 
-    if(ranking.method=='stat'){
+    if(ranking.method == 'stat'){
         assign('fgseaRes_stat',fgseaRes)
-        assign(paste('fgseaRes_stat',sep = "_","pvalue"), fgseaRes_pvalue)
-        assign(paste('fgseaRes_stat',sep = "_","qvalue"), fgseaRes_qvalue)
-    } else if(ranking.method=='abs.stat'){
+        assign(paste('fgseaRes_stat',sep="_","pvalue"), fgseaRes_pvalue)
+        assign(paste('fgseaRes_stat',sep="_","qvalue"), fgseaRes_qvalue)
+    } else if(ranking.method == 'abs.stat'){
         assign('fgseaRes_abs.stat',fgseaRes )
-        assign(paste('fgseaRes_abs.stat',sep = "_","pvalue"), fgseaRes_pvalue)
-        assign(paste('fgseaRes_abs.stat',sep = "_","qvalue"), fgseaRes_qvalue)
+        assign(paste('fgseaRes_abs.stat',sep="_","pvalue"), fgseaRes_pvalue)
+        assign(paste('fgseaRes_abs.stat',sep="_","qvalue"), fgseaRes_qvalue)
     }
 
     #save
     data.table::fwrite(fgseaRes_pvalue,
-                        file = file.path(output_path, paste("GSEA_pathway",
-                                        ranking.method,sep = "_","pvalue.txt")),
-                                        col.names = TRUE, row.names = TRUE,
-                                        sep = '\t', quote = FALSE, na = NA)
+                        file=file.path(output_path, paste("GSEA_pathway",
+                                        ranking.method,sep="_","pvalue.txt")),
+                                        col.names=TRUE, row.names=TRUE,
+                                        sep='\t', quote=FALSE, na=NA)
     data.table::fwrite(fgseaRes_qvalue,
-                        file = file.path(output_path, paste("GSEA_pathway",
-                                        ranking.method,sep = "_","qvalue.txt")),
-                                        col.names = TRUE, row.names = TRUE,
-                                        sep = '\t', quote = FALSE, na = NA)
+                        file=file.path(output_path, paste("GSEA_pathway",
+                                        ranking.method,sep="_","qvalue.txt")),
+                                        col.names=TRUE, row.names=TRUE,
+                                        sep='\t', quote=FALSE, na=NA)
     data.table::fwrite(fgseaRes,
-                        file = file.path(output_path, paste("GSEA_pathway",
-                                        ranking.method,sep = "_","all.txt")),
-                                        col.names = TRUE, row.names = FALSE,
-                                        sep = '\t', quote = FALSE, na = NA)
+                        file=file.path(output_path, paste("GSEA_pathway",
+                                        ranking.method,sep="_","all.txt")),
+                                        col.names=TRUE, row.names=FALSE,
+                                        sep='\t', quote=FALSE, na=NA)
 }
 
-.z_score.cal <- function(x, NA.rm=FALSE, rescale01=FALSE){
+.z_score_cal <- function(x, NA.rm=FALSE, rescale01=FALSE){
     if(sd(x, na.rm=NA.rm) == 0){
         out <- rep(0, length(x))
     } else {
         out <- (x - mean(x, na.rm=NA.rm)) / sd(x, na.rm=NA.rm)
-        if(rescale01==TRUE){
+        if(rescale01 == TRUE){
         out <- scales::rescale((x - mean(x, na.rm=NA.rm)) / sd(x, na.rm=NA.rm))
         }
     }
@@ -44,26 +50,26 @@
 
 .cowplotText <- function(text, style) {
     cowplot::ggdraw() + do.call(cowplot::draw_text, c(list(text=text), style))
-    #+ ggplot2::theme(panel.background = element_rect(color = "black"))
+    #+ ggplot2::theme(panel.background=element_rect(color="black"))
 }
 
-.NESbarplot <- function(NES,maxNES) {
+.nesbarplot <- function(NES,maxNES) {
     color <- base::ifelse(as.numeric(NES)>0,'#FD7C69','#5F90BB')
     data.frame(Y="",X=abs(NES),X2=1/4*abs(NES)) %>%
-        ggplot2::ggplot(ggplot2::aes(x = X, y = Y)) +
-        ggplot2::geom_bar(stat = "identity",fill=color,na.rm = TRUE) +
-        #geom_text(aes(x=X2 ,label = round(X,2)),hjust=0) +
-        ggplot2::scale_x_continuous(limits = c(0,maxNES)) +
-        ggplot2::theme(panel.background = ggplot2::element_blank(),
+        ggplot2::ggplot(ggplot2::aes(x=X, y=Y)) +
+        ggplot2::geom_bar(stat="identity",fill=color,na.rm=TRUE) +
+        #geom_text(aes(x=X2 ,label=round(X,2)),hjust=0) +
+        ggplot2::scale_x_continuous(limits=c(0,maxNES)) +
+        ggplot2::theme(panel.background=ggplot2::element_blank(),
             plot.background=ggplot2::element_blank(),
-            axis.text.x = ggplot2::element_blank(),
+            axis.text.x=ggplot2::element_blank(),
             axis.line=ggplot2::element_blank(),
             axis.text=ggplot2::element_blank(),
             axis.ticks=ggplot2::element_blank(),
-            panel.grid = ggplot2::element_blank(),
+            panel.grid=ggplot2::element_blank(),
             axis.title=ggplot2::element_blank(),
-            plot.margin = rep(ggplot2::unit(0,"null"),4),
-            panel.spacing = rep(ggplot2::unit(0,"null"),4)
+            plot.margin=rep(ggplot2::unit(0,"null"),4),
+            panel.spacing=rep(ggplot2::unit(0,"null"),4)
     )
 }
 
@@ -71,14 +77,14 @@
                             gseaParam=1,
                             ticksSize=0.2) {
 
-    pd <- .plotEnrichmentData(pathway=pathway,stats=stats,gseaParam = gseaParam)
+    pd <- .plotEnrichmentData(pathway=pathway,stats=stats,gseaParam=gseaParam)
     pd$ticks$color <- ifelse(as.numeric(color)>0,'#FD7C69','#5F90BB')
     with(pd,ggplot2::ggplot(data=curve) +
             ggplot2::geom_segment(data=ticks,
                                 mapping=ggplot2::aes(x=rank, y=-spreadES/16,
                                                     xend=rank, yend=spreadES/16,
                                                     color=color),
-                                linewidth=ticksSize, show.legend = FALSE) +
+                                linewidth=ticksSize, show.legend=FALSE) +
             ggplot2::scale_colour_identity())
 }
 
@@ -97,8 +103,8 @@
     pathway <- sort(pathway)
     pathway <- unique(pathway)
 
-    gseaRes <- fgsea::calcGseaStat(statsAdj, selectedStats = pathway,
-                                    returnAllExtremes = TRUE)
+    gseaRes <- fgsea::calcGseaStat(statsAdj, selectedStats=pathway,
+                                    returnAllExtremes=TRUE)
 
     bottoms <- gseaRes$bottoms
     tops <- gseaRes$tops
@@ -122,25 +128,25 @@
 
 .get_ps <- function(Pathways, fgseaRes, maxNES, valueStyle, headerLabelStyle,
                     pathways.all, pathwayLabelStyleDefault, stats){
-    common_theme <- ggplot2::theme(panel.background = ggplot2::element_blank(),
-    plot.background = ggplot2::element_blank(),
-    axis.line = ggplot2::element_blank(), axis.text = ggplot2::element_blank(),
-    axis.ticks = ggplot2::element_blank(),panel.grid = ggplot2::element_blank(),
-    axis.title = ggplot2::element_blank(),
-    plot.margin = rep(ggplot2::unit(0, "null"), 4),
-    panel.spacing = rep(ggplot2::unit(0, "null"), 4))
+    common_theme <- ggplot2::theme(panel.background=ggplot2::element_blank(),
+    plot.background=ggplot2::element_blank(),
+    axis.line=ggplot2::element_blank(), axis.text=ggplot2::element_blank(),
+    axis.ticks=ggplot2::element_blank(),panel.grid=ggplot2::element_blank(),
+    axis.title=ggplot2::element_blank(),
+    plot.margin=rep(ggplot2::unit(0, "null"), 4),
+    panel.spacing=rep(ggplot2::unit(0, "null"), 4))
     ps <- lapply(names(Pathways), function(pn) {
 
     annotation <- fgseaRes[fgseaRes$pathway == pn, ]
 
-    list(.NESbarplot(annotation$NES, maxNES),
+    list(.nesbarplot(annotation$NES, maxNES),
             .cowplotText(sprintf("%.2f", annotation$NES), valueStyle),
-            .cowplotText(formatC(annotation$pval, digits = 2, format = "e"),
+            .cowplotText(formatC(annotation$pval, digits=2, format="e"),
                     headerLabelStyle),
             cowplot::plot_grid(
-            .plotEnrichment(pathways.all[[pn]], stats, color = annotation$NES) +
+            .plotEnrichment(pathways.all[[pn]], stats, color=annotation$NES) +
             common_theme +
-    ggplot2::theme(panel.background = ggplot2::element_rect(color = "black"))),
+    ggplot2::theme(panel.background=ggplot2::element_rect(color="black"))),
             .cowplotText(pn, pathwayLabelStyleDefault))})
 
     return(ps)
@@ -177,7 +183,7 @@
         unname(as.vector(na.omit(match(p, names(statsAdj)))))})
 
     # fixes #40
-    Pathways <- Pathways[vapply(Pathways, length, FUN.VALUE = numeric(1)) > 0]
+    Pathways <- Pathways[vapply(Pathways, length, FUN.VALUE=numeric(1)) > 0]
     NES_all <- fgseaRes %>% dplyr::filter(pathway %in% names(Pathways)) %>%
         dplyr::pull(NES)
     maxNES <- max(abs(NES_all)) # pmax(abs(NES_all))
@@ -190,7 +196,7 @@
         grobs <- c(lapply(c("","NES","P-value","Enrichment plot"), .cowplotText,
             style=headerLabelStyle), list(.cowplotText("Pathway",
             modifyList(headerLabelStyle, pathwayLabelStyle[c("hjust", "x")]))),
-            unlist(ps, recursive = FALSE))
+            unlist(ps, recursive=FALSE))
 
 p <- cowplot::plot_grid(plotlist=grobs, ncol=sum(as.numeric(colwidths) != 0),
                             rel_widths=colwidths[as.numeric(colwidths) != 0])
@@ -218,21 +224,21 @@ p <- cowplot::plot_grid(plotlist=grobs, ncol=sum(as.numeric(colwidths) != 0),
     RES_NES_topdown10$Type <- dplyr::if_else(RES_NES_topdown10$NES > 0,
                                             "risk", "protect")
     RES_NES_topdown10$pathway <- factor(RES_NES_topdown10$pathway,
-                                        levels = rev(RES_NES_topdown10$pathway))
+                                        levels=rev(RES_NES_topdown10$pathway))
     tab1 <- RES_NES_topdown10 %>%
-                    dplyr::mutate(y = stringr::str_wrap(pathway, width = 26))
-    p1 <- ggpubr::ggbarplot(data = tab1, y = "NES", x = "y", color = "Type",
-                        fill = "Type", palette = c("#66C2A5", "#FC8D62"),
-                        xlab = "", ylab = "NES", orientation = "horiz",
-                        alpha = 0.6, sort.val = "asc", legend = "bottom") +
-    ggplot2::geom_vline(xintercept = 0, color = "#444444") +
-    ggplot2::theme(axis.title = ggplot2::element_text(size = 7),
-                        axis.text.x = ggplot2::element_text(size = 7),
-                        axis.text.y = ggplot2::element_text(size = 5),
-                        legend.title = ggplot2::element_text(size = 6),
-                        legend.text = ggplot2::element_text(size = 6))
-    ggplot2::ggsave(filename = plot.name, plot = p1, path = output_path,
-                    width = 4, height = 6)
+                    dplyr::mutate(y=stringr::str_wrap(pathway, width=26))
+    p1 <- ggpubr::ggbarplot(data=tab1, y="NES", x="y", color="Type",
+                        fill="Type", palette=c("#66C2A5", "#FC8D62"),
+                        xlab="", ylab="NES", orientation="horiz",
+                        alpha=0.6, sort.val="asc", legend="bottom") +
+    ggplot2::geom_vline(xintercept=0, color="#444444") +
+    ggplot2::theme(axis.title=ggplot2::element_text(size=7),
+                        axis.text.x=ggplot2::element_text(size=7),
+                        axis.text.y=ggplot2::element_text(size=5),
+                        legend.title=ggplot2::element_text(size=6),
+                        legend.text=ggplot2::element_text(size=6))
+    ggplot2::ggsave(filename=plot.name, plot=p1, path=output_path,
+                    width=4, height=6)
     return(p1)
 }
 

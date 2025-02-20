@@ -18,14 +18,21 @@
 #' @param plot_out logic. Plot the heatmap to output_path (Default: FALSE).
 #' @param topN Integer. Number of significant functions in hte output bar plots.
 #' Default is 10.
+#' @include utility.R
+#' @importFrom SummarizedExperiment colData
+#' @importFrom dplyr filter select left_join mutate arrange desc slice group_by
+#'   summarize distinct
+#' @importFrom tibble deframe
+#' @importFrom ggplot2 ggsave
+#' @importFrom stats na.omit
 #' @return Return heatmaps to the outpath specified.
 #' @export
 #' @examples
 #' data(GSEA_data)
 #' output_path <- tempdir()
-#' heatmap <- plot_heat(SE_data.fgsea = GSEA_data, output_path = output_path,
-#' pathways.all = pathways.all, significat_type = "pval", strings = c("KEGG"),
-#' ranking.method = "stat", plot_out=FALSE,topN=3)
+#' heatmap <- plot_heat(SE_data.fgsea=GSEA_data, output_path=output_path,
+#' pathways.all=pathways.all, significat_type="pval", strings=c("KEGG"),
+#' ranking.method="stat", plot_out=FALSE,topN=3)
 
 plot_heat <- function(SE_data.fgsea, output_path, significat_type="pval",
                 strings=c("GOBP","GOCC","GOMF","KEGG","REACTOME","WP"),
@@ -33,15 +40,15 @@ plot_heat <- function(SE_data.fgsea, output_path, significat_type="pval",
     cor.df <- SE_data.fgsea@metadata$cor.df
     RES_GSEA <- SE_data.fgsea@metadata$fgseaRes %>% dplyr::filter(pval<0.05)
     RES_NES_total <- RES_GSEA %>% dplyr::slice(
-        grep(paste0("[",paste(paste(strings, " "), collapse = "|"),"]"),
-            pathway)) %>% dplyr::mutate(`-log10(pvalue)` = -log10(pval))
+        grep(paste0("[",paste(paste(strings, " "), collapse="|"),"]"),
+            pathway)) %>% dplyr::mutate(`-log10(pvalue)`=-log10(pval))
     RES_NES_total$leadingEdge <- gsub('[|]',';',RES_NES_total$leadingEdge)
     RES_NES_total$pathway <- gsub(" ","_",RES_NES_total$pathway)
     mapping <- as.data.frame(SummarizedExperiment::colData(SE_data.fgsea))
     mapping.tmp <- mapping %>% dplyr::select(gene=gene_symbol, ensg=ensg_id)
     res.out.ensg <- dplyr::left_join(cor.df %>% dplyr::select(ensg=gene,cor),
                                     mapping.tmp) %>% dplyr::filter(!is.na(ensg))
-    CodingGene <- mapping %>% dplyr::filter(gene_biotype=="protein_coding") %>%
+    CodingGene <- mapping %>% dplyr::filter(gene_biotype == "protein_coding")%>%
         dplyr::select(ENSG=ensg_id,gene_symbol=gene_symbol)
     ranksDF  <-  res.out.ensg %>% dplyr::select(id=ensg,stat=cor)  %>%
         dplyr::rename(ENSG=id) %>% dplyr::select(ENSG,stat) %>%
@@ -52,25 +59,33 @@ plot_heat <- function(SE_data.fgsea, output_path, significat_type="pval",
     dplyr::summarize(ranking.method=mean(as.numeric(get(ranking.method)))) %>%
         dplyr::filter(ranking.method!='Inf'&ranking.method!='-Inf') %>%
         tibble::deframe()
-    tmp.res <- NULL
-    for (j in seq_along(strings)) {
+    tmp.res <- lapply(strings, function(string_val) {
         RES_NES_top10 <- RES_NES_total %>%
-            dplyr::slice(grep(paste0(strings[j], "_"),RES_NES_total$pathway))%>%
-            dplyr::filter(.data[[significat_type]]<0.05) %>%
-            dplyr::arrange(dplyr::desc(NES)) %>% dplyr::slice(seq_len(topN))
+        dplyr::slice(grep(paste0(string_val, "_"), RES_NES_total$pathway)) %>%
+        dplyr::filter(.data[[significat_type]] < 0.05) %>%
+        dplyr::arrange(dplyr::desc(NES)) %>%  dplyr::slice(seq_len(topN))
+
         RES_NES_bottom10 <- RES_NES_total %>%
-        dplyr::slice(grep(paste0(strings[j], "_"), RES_NES_total$pathway)) %>%
-        dplyr::filter(.data[[significat_type]]<0.05) %>%
+        dplyr::slice(grep(paste0(string_val, "_"), RES_NES_total$pathway)) %>%
+        dplyr::filter(.data[[significat_type]] < 0.05) %>%
         dplyr::arrange(dplyr::desc(-NES)) %>%
-        dplyr::slice(seq_len(topN)) %>% dplyr::arrange(dplyr::desc(NES))
-        tmp <- .plotGseaTable(pathways.all, Pathways=pathways.all[
-            c(RES_NES_top10$pathway,RES_NES_bottom10$pathway)],
-            stats = ranksDF, fgseaRes = RES_NES_total)
-        if(plot_out){ggplot2::ggsave(filename = file.path(output_path,
-        paste0("GSEA_heatmap_",strings[j],".png")),
-        plot = tmp, width = 15, height = 10)}
-        tmp.res[[strings[j]]] <- tmp
-    }
+        dplyr::slice(seq_len(topN)) %>%  dplyr::arrange(dplyr::desc(NES))
+
+        tmp <- .plotGseaTable(
+        pathways.all,
+        Pathways=pathways.all[c(RES_NES_top10$pathway,
+                                  RES_NES_bottom10$pathway)],
+        stats=ranksDF,
+        fgseaRes=RES_NES_total
+        )
+
+        if (plot_out) {
+            ggplot2::ggsave(filename=file.path(output_path,
+            paste0("GSEA_heatmap_", string_val, ".png")),
+            plot=tmp, width=15, height=10)}
+        tmp})
+    names(tmp.res) <- strings
+
     return(tmp.res)
 }
 

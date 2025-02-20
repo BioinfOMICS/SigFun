@@ -1,4 +1,4 @@
-#' Example gsea_data SummarizedExperiment Data
+#' Example sig2GSEA_input
 #'
 #' This dataset contains example data in the SummarizedExperiment format.
 #' It is used for demonstrating functions in this package.
@@ -14,11 +14,11 @@
 #'
 #' @examples
 #' # Load the data
-#' data(GSEA_data)
+#' data(sig2GSEA_input)
 #'
 #'
 #' @docType data
 #' @keywords datasets
-#' @name GSEA_data
-#' @usage data(GSEA_data)
+#' @name test_SE
+#' @usage data(sig2GSEA_input)
 NULL

@@ -14,11 +14,11 @@
 #'
 #' @examples
 #' # Load the data
-#' data(Sig2GSEA_input)
+#' data(sig2GSEA_input)
 #'
 #'
 #' @docType data
 #' @keywords datasets
 #' @name test_pathways
-#' @usage data(Sig2GSEA_input)
+#' @usage data(sig2GSEA_input)
 NULL

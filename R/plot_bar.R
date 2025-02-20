@@ -17,30 +17,34 @@
 #' @export
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %<>%
+#' @importFrom dplyr filter slice mutate arrange desc
+#' @importFrom data.table fwrite
+#' @importFrom ggplot2 ggplot theme_void annotate lims theme ggsave unit
+#' @include utility.R
 #' @examples
 #' data("demo")
 #' output_path <- tempdir()
-#' plot_bar(
-#' SE_data.fgsea = SE_data,
+#' res_plot <- plot_bar(
+#' SE_data.fgsea=SE_data,
 #' output_path=output_path,
 #' topN=10,
-#' significat_type = "pval",
-#' strings = c("KEGG"))
-plot_bar <- function(SE_data.fgsea, output_path, significat_type = "pval",
-    topN = 10, strings = c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP")) {
+#' significat_type="pval",
+#' strings=c("KEGG"))
+plot_bar <- function(SE_data.fgsea, output_path, significat_type="pval",
+    topN=10, strings=c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP")) {
 
     RES_GSEA <- SE_data.fgsea@metadata$fgseaRes %>%
                     dplyr::filter(pval < 0.05)
 
-    pattern <- paste0("[", paste(paste(strings, " "), collapse = "|"), "]")
+    pattern <- paste0("[", paste(paste(strings, " "), collapse="|"), "]")
 
     RES_NES_total <- RES_GSEA %>% dplyr::slice(grep(pattern, pathway)) %>%
-        dplyr::mutate(`-log10(pvalue)` = -log10(pval))
+        dplyr::mutate(`-log10(pvalue)`=-log10(pval))
 
     RES_NES_total$leadingEdge <- gsub("[|]", ";", RES_NES_total$leadingEdge)
 
-    data.table::fwrite(RES_NES_total, col.names = TRUE, row.names = FALSE,
-    file = file.path(output_path, "GSEA_stat.txt"), sep = "\t", quote = FALSE)
+    data.table::fwrite(RES_NES_total, col.names=TRUE, row.names=FALSE,
+    file=file.path(output_path, "GSEA_stat.txt"), sep="\t", quote=FALSE)
     barplots <- NULL
     for (j in seq_along(strings)) {
 
@@ -60,13 +64,13 @@ plot_bar <- function(SE_data.fgsea, output_path, significat_type = "pval",
         } else {
 
             p <- ggplot2::ggplot() + ggplot2::theme_void() + ggplot2::annotate(
-    geom = "text",x = 1, y = 1, label = paste("No significant (",
+    geom="text",x=1, y=1, label=paste("No significant (",
                 significat_type, "<0.05) item.")) +
-                ggplot2::lims(x = c(0, 2), y = c(0, 2)) +
-                ggplot2::theme(plot.margin = ggplot2::unit(c(0, 0, 0, 0), "cm"))
+                ggplot2::lims(x=c(0, 2), y=c(0, 2)) +
+                ggplot2::theme(plot.margin=ggplot2::unit(c(0, 0, 0, 0), "cm"))
 
-            ggplot2::ggsave(filename = file.path(output_path, plot.name),
-                plot = p,width = 3,height = 1.4,units = "in",dpi = 600)
+            ggplot2::ggsave(filename=file.path(output_path, plot.name),
+                plot=p,width=3,height=1.4,units="in",dpi=600)
         }
     }
     return(barplots)
