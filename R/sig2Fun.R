@@ -85,12 +85,12 @@ sig2Fun <- function(SE_data, ranking.method="stat", species="human",
     if(plot_out){
     barplots <- plot_bar(SE_data.fgsea=SE_data, output_path=output_path,
     topN=topN, significat_type=significat_type, strings=strings)
-    SE_data[["barplots"]] <- barplots
+    SE_data@metadata[["barplots"]] <- barplots
 
     heatmap <- plot_heat(SE_data.fgsea=SE_data, output_path=output_path,
         strings=strings, significat_type=significat_type, topN=topN,
         pathways.all=pathways_all, ranking.method=ranking.method)
-    SE_data[["heatmap"]] <- heatmap
+    SE_data@metadata[["heatmap"]] <- heatmap
     }
 
     return(SE_data)
