@@ -22,6 +22,7 @@
 #' SigCor will add "cor.df" to the metadata of the input object which is the
 #' necessary input for Sig2GSEA.
 #' @importFrom SummarizedExperiment SummarizedExperiment rowData assay
+#' @importFrom S4Vectors metadata
 #' @importFrom tibble rownames_to_column
 #' @importFrom tidyr gather pivot_wider
 #' @importFrom dplyr filter select distinct
