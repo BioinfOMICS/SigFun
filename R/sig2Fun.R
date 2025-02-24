@@ -32,7 +32,7 @@
 #' @param plot_out logic. Plot the heatmap to output_path (Default: FALSE).
 #' @return Return a SummarizedExperiment object containing analysis results.
 #' @importFrom SummarizedExperiment SummarizedExperiment
-#' @importFrom S4Vectors DataFrame
+#' @importFrom S4Vectors DataFrame metadata
 #' @importFrom stats cor
 #' @importFrom fgsea gmtPathways
 #' @importFrom methods new
@@ -70,27 +70,27 @@ sig2Fun <- function(SE_data, ranking.method="stat", species="human",
         if(!("cor.df" %in% names(SE_data@metadata))){
             SE_data.cor <- sigCor(SE_data=SE_data, cor.method=cor.method,
             output_path=output_path, Z.transform=Z.transform)
-            SE_data@metadata$cor.df <- SE_data.cor@metadata$cor.df
+            metadata(SE_data) <- list(cor.df=metadata(SE_data.cor)$cor.df)
         }
 
         if(!("fgseaRes" %in% names(SE_data@metadata))){
             SE_data.fgsea <- sig2GSEA(SE_data.cor=SE_data.cor,
                 ranking.method=ranking.method, output_path=output_path,
                 pathways.all=pathways_all)
-            .summary_gsea(SE_data.fgsea@metadata$fgseaRes,
+            .summary_gsea(metadata(SE_data.fgsea)$fgsea,
             ranking.method=ranking.method, output_path=output_path)
-            SE_data@metadata$fgseaRes <- SE_data.fgsea@metadata$fgseaRes
+            metadata(SE_data) <- list(fgsea=metadata(SE_data.fgsea)$fgsea)
         }
 
     if(plot_out){
     barplots <- plot_bar(SE_data.fgsea=SE_data, output_path=output_path,
     topN=topN, significat_type=significat_type, strings=strings)
-    SE_data@metadata[["barplots"]] <- barplots
+    metadata(SE_data) <- list(barplots=barplots)
 
     heatmap <- plot_heat(SE_data.fgsea=SE_data, output_path=output_path,
         strings=strings, significat_type=significat_type, topN=topN,
         pathways.all=pathways_all, ranking.method=ranking.method)
-    SE_data@metadata[["heatmap"]] <- heatmap
+    metadata(SE_data) <- list(heaymap=heatmap)
     }
 
     return(SE_data)

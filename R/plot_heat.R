@@ -20,6 +20,7 @@
 #' Default is 10.
 #' @include utility.R
 #' @importFrom SummarizedExperiment colData
+#' @importFrom S4Vectors metadata
 #' @importFrom dplyr filter select left_join mutate arrange desc slice group_by
 #'   summarize distinct
 #' @importFrom tibble deframe
@@ -37,8 +38,8 @@
 plot_heat <- function(SE_data.fgsea, output_path, significat_type="pval",
     strings=c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP"),
     topN=10, pathways.all, ranking.method="stat", plot_out=TRUE) {
-    cor.df <- SE_data.fgsea@metadata$cor.df
-    RES_GSEA <- SE_data.fgsea@metadata$fgseaRes %>% dplyr::filter(pval < 0.05)
+    cor.df <- metadata(SE_data.fgsea)$cor.df
+    RES_GSEA <- metadata(SE_data.fgsea)$fgseaRes %>% dplyr::filter(pval < 0.05)
     RES_NES_total <- RES_GSEA %>% dplyr::slice(grep(
     paste0("[", paste(paste(strings, " "), collapse="|"), "]"), pathway)) %>%
     dplyr::mutate(`-log10(pvalue)`=-log10(pval))

@@ -74,7 +74,7 @@ sigCor <- function(SE_data, output_path,
         pattern.genes.norm <- if (length(rm.index) > 0) {
         pattern.genes[, -rm.index]
         } else {
-            apply(pattern.genes, 2, .z_score_cal)
+            pattern.genes
         }
     }
     cor.list <- apply(pattern.genes.norm, 2, function(x) {
@@ -83,6 +83,6 @@ sigCor <- function(SE_data, output_path,
     })
     cor.df <- data.frame(gene=names(cor.list), cor=as.numeric(cor.list))
     readr::write_delim(cor.df, corRES.path, delim="\t")
-    SE_data@metadata$cor.df <- cor.df
+    metadata(SE_data) <- list(cor.df=cor.df)
     return(SE_data)
 }

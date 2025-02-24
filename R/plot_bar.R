@@ -18,6 +18,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %<>%
 #' @importFrom dplyr filter slice mutate arrange desc
+#' @importFrom S4Vectors metadata
 #' @importFrom data.table fwrite
 #' @importFrom ggplot2 ggplot theme_void annotate lims theme ggsave unit
 #' @include utility.R
@@ -33,7 +34,7 @@
 plot_bar <- function(SE_data.fgsea, output_path, significat_type="pval",
     topN=10, strings=c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP")) {
 
-    RES_GSEA <- SE_data.fgsea@metadata$fgseaRes %>%
+    RES_GSEA <- metadata(SE_data.fgsea)$fgseaRes %>%
                     dplyr::filter(pval < 0.05)
 
     pattern <- paste0("[", paste(paste(strings, " "), collapse="|"), "]")
