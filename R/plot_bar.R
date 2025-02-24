@@ -34,7 +34,7 @@
 plot_bar <- function(SE_data.fgsea, output_path, significat_type="pval",
     topN=10, strings=c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP")) {
 
-    RES_GSEA <- metadata(SE_data.fgsea)$fgseaRes %>%
+    RES_GSEA <- metadata(SE_data.fgsea)$fgsea %>%
                     dplyr::filter(pval < 0.05)
 
     pattern <- paste0("[", paste(paste(strings, " "), collapse="|"), "]")
