@@ -17,6 +17,7 @@
 #' necessary input for plot_bar and plot_heat.
 #' @include utility.R
 #' @importFrom SummarizedExperiment colData
+#' @importFrom S4Vectors metadata
 #' @importFrom dplyr select rename left_join mutate filter distinct group_by
 #'   summarize across where
 #' @importFrom tibble deframe
