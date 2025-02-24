@@ -67,30 +67,31 @@ sig2Fun <- function(SE_data, ranking.method="stat", species="human",
     }
     Sys.chmod("my_folder", mode="755", use_umask=TRUE)
     SE_data.cor <- SE_data
-        if(!("cor.df" %in% names(SE_data@metadata))){
+        if(!("cor.df" %in% names(metadata(SE_data.cor)))){
             SE_data.cor <- sigCor(SE_data=SE_data, cor.method=cor.method,
             output_path=output_path, Z.transform=Z.transform)
-            metadata(SE_data) <- list(cor.df=metadata(SE_data.cor)$cor.df)
+            metadata(SE_data.cor) <- list(cor.df=metadata(SE_data.cor)$cor.df)
         }
-
-        if(!("fgseaRes" %in% names(SE_data@metadata))){
+    SE_data.fgsea <- SE_data.cor
+        if(!("fgseaRes" %in% names(metadata(SE_data.fgsea)))){
             SE_data.fgsea <- sig2GSEA(SE_data.cor=SE_data.cor,
                 ranking.method=ranking.method, output_path=output_path,
                 pathways.all=pathways_all)
             .summary_gsea(metadata(SE_data.fgsea)$fgsea,
             ranking.method=ranking.method, output_path=output_path)
-            metadata(SE_data) <- list(fgsea=metadata(SE_data.fgsea)$fgsea)
+            metadata(SE_data.fgsea) <- list(fgsea=metadata(SE_data.fgsea)$fgsea,
+                                            cor.df=metadata(SE_data.cor)$cor.df)
         }
 
     if(plot_out){
-    barplots <- plot_bar(SE_data.fgsea=SE_data, output_path=output_path,
+    barplots <- plot_bar(SE_data.fgsea=SE_data.fgsea, output_path=output_path,
     topN=topN, significat_type=significat_type, strings=strings)
-    metadata(SE_data) <- list(barplots=barplots)
+    SE_data[["barplots"]] <- list(barplots=barplots)
 
-    heatmap <- plot_heat(SE_data.fgsea=SE_data, output_path=output_path,
+    heatmap <- plot_heat(SE_data.fgsea=SE_data.fgsea, output_path=output_path,
         strings=strings, significat_type=significat_type, topN=topN,
         pathways.all=pathways_all, ranking.method=ranking.method)
-    metadata(SE_data) <- list(heaymap=heatmap)
+    SE_data[["heatmap"]]  <- list(heaymap=heatmap)
     }
 
     return(SE_data)
