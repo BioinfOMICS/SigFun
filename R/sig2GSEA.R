@@ -65,7 +65,8 @@ sig2GSEA <- function(SE_data.cor, ranking.method, output_path, pathways.all,
 
     metadata(SE_data.cor) <- list(fgseaRes=fgseaRes %>%
         dplyr::mutate(dplyr::across(where(is.numeric), \(x) round(x, 5))) %>%
-        dplyr::mutate(pathway=gsub('_', " ", x=pathway)))
+        dplyr::mutate(pathway=gsub('_', " ", x=pathway)),
+        cor.df=metadata(SE_data.cor)$cor.df)
 
     return(SE_data.cor)
 }
