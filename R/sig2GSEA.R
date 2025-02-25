@@ -41,7 +41,8 @@ sig2GSEA <- function(SE_data.cor, ranking.method, output_path, pathways.all,
         CodingGene <- mapping %>% dplyr::select(ENSG="V2", gene_symbol="V1")
     }
     #
-    input <- metadata(SE_data.cor)$cor.df %>% dplyr::select(id=gene, stat=cor)
+    input <- S4Vectors::metadata(SE_data.cor)$cor.df %>% 
+    dplyr::select(id=gene, stat=cor)
     input <- input %>% dplyr::rename(ENSG=id) %>% dplyr::select(ENSG,stat) %>%
         dplyr::left_join(CodingGene, by ="ENSG" )
 
@@ -66,7 +67,7 @@ sig2GSEA <- function(SE_data.cor, ranking.method, output_path, pathways.all,
     S4Vectors::metadata(SE_data.cor) <- list(fgseaRes=fgseaRes %>%
         dplyr::mutate(dplyr::across(where(is.numeric), \(x) round(x, 5))) %>%
         dplyr::mutate(pathway=gsub('_', " ", x=pathway)),
-        cor.df=metadata(SE_data.cor)$cor.df)
+        cor.df=S4Vectors::metadata(SE_data.cor)$cor.df)
 
     return(SE_data.cor)
 }
