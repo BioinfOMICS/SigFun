@@ -1,7 +1,7 @@
 Package: SigFun
 Type: Package
 Title: SigFun
-Version: 0.99.4
+Version: 0.99.5
 Authors@R: c(
     person("Wei-Chung", "Cheng", email="chenglabomics@gmail.com", 
     role = c("aut","cre","cph","fnd"), 
