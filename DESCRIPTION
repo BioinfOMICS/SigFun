@@ -1,10 +1,10 @@
 Package: SigFun
 Type: Package
 Title: SigFun
-Version: 0.99.4
+Version: 0.99.5
 Authors@R: c(
     person("Wei-Chung", "Cheng", email="chenglabomics@gmail.com", 
-    role = c("aut","cre","cph","find"), 
+    role = c("aut","cre","cph","fnd"), 
     comment = c(ORCID = "0000-0002-1229-4857")),
     person("Chia-Hsin ", "Liu", role = c("aut", "ctb")),
     person("Pei-Chun", "Shen", role = c("aut", "ctb")),
