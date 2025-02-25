@@ -20,7 +20,7 @@ BugReports: https://github.com/TMSWCChenglab/SigFun/issues
 LazyData: FALSE
 biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG
 Depends:
-    R (>= 4.4.0)
+    R (>= 4.5.0)
 Imports: rlang, BiocGenerics, methods, S4Vectors, data.table, dplyr, SummarizedExperiment, magrittr, cowplot, fgsea, ggplot2, ggpubr, readr, tibble, tidyr, scales, stringr
 Suggests: devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
 Enhances: 
