@@ -70,17 +70,19 @@ sig2Fun <- function(SE_data, ranking.method="stat", species="human",
         if(!("cor.df" %in% names(metadata(SE_data.cor)))){
             SE_data.cor <- sigCor(SE_data=SE_data, cor.method=cor.method,
             output_path=output_path, Z.transform=Z.transform)
-            metadata(SE_data.cor) <- list(cor.df=metadata(SE_data.cor)$cor.df)
+            S4Vectors::metadata(SE_data.cor) <- list(cor.df=
+                                S4Vectors::metadata(SE_data.cor)$cor.df)
         }
     SE_data.fgsea <- SE_data.cor
-        if(!("fgseaRes" %in% names(metadata(SE_data.fgsea)))){
+        if(!("fgseaRes" %in% names(S4Vectors::metadata(SE_data.fgsea)))){
             SE_data.fgsea <- sig2GSEA(SE_data.cor=SE_data.cor,
                 ranking.method=ranking.method, output_path=output_path,
                 pathways.all=pathways_all)
-            .summary_gsea(metadata(SE_data.fgsea)$fgsea,
+            .summary_gsea(S4Vectors::metadata(SE_data.fgsea)$fgsea,
             ranking.method=ranking.method, output_path=output_path)
-            metadata(SE_data.fgsea) <- list(fgsea=metadata(SE_data.fgsea)$fgsea,
-                                            cor.df=metadata(SE_data.cor)$cor.df)
+            S4Vectors::metadata(SE_data.fgsea) <- list(
+                fgsea=S4Vectors::metadata(SE_data.fgsea)$fgsea,
+                cor.df=S4Vectors::metadata(SE_data.cor)$cor.df)
         }
 
     if(plot_out){
