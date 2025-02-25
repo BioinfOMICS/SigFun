@@ -84,6 +84,6 @@ sigCor <- function(SE_data, output_path,
     })
     cor.df <- data.frame(gene=names(cor.list), cor=as.numeric(cor.list))
     readr::write_delim(cor.df, corRES.path, delim="\t")
-    metadata(SE_data) <- list(cor.df=cor.df)
+    S4Vectors::metadata(SE_data) <- list(cor.df=cor.df)
     return(SE_data)
 }
