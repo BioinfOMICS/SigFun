@@ -4,14 +4,16 @@ year <- sub("-.*", "", Sys.Date())
 note <- sprintf("R package version %s", utils::packageVersion("SigFun")
 
 bibentry(
-    bibtype  = "Manual",
-    title    = "SigFun: Functional Analysis for Gene Signature",
-    author   = c(person("Wei-Chung", "Cheng", role = c("aut","cre")))
-    year     = year,
-    note     = note,
-    url      = "https://bioconductor.org/packages/SigFun/",
-    textVersion = sprintf(
-    "您的姓名 (%s). SigFun: 您套件功能的簡短描述. %s. https://bioconductor.org/packages/SigFun/",
+  bibtype  = "Manual",
+  title    = "SigFun: Signature Functional Analysis",
+  author   = c(
+    person("Wei-Chung", "Cheng", role = c("aut", "cre"))
+  ),
+  year     = year,
+  note     = note,
+  url      = "https://bioconductor.org/packages/SigFun/",
+  textVersion = sprintf(
+    "Cheng (%s). SigFun: Signature Functional Analysis. %s. https://bioconductor.org/packages/SigFun/",
     year, note
-    )
+  )
 )
