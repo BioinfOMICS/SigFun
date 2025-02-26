@@ -7,7 +7,7 @@ pathways and processes associated with their gene signatures of interest.
 ## Installation 
 Before the installation, you should first install the following packages from Bioconductor:
 
-```{r install_package, eval=FALSE}
+```R
 if (!requireNamespace("BiocManager", quietly=TRUE))
     install.packages("BiocManager")
 BiocManager::install("SigFun")
