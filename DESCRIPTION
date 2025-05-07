@@ -1,0 +1,50 @@
+Package: SigFun
+Type: Package
+Title: SigFun
+Version: 0.99.0
+Authors@R: c(
+    person("Wei-Chung", "Cheng", email="chenglabomics@gmail.com", 
+    role = c("aut","cre","cph"), 
+    comment = c(ORCID = "0000-0002-1229-4857")),
+    person("Chia-Hsin ", "Liu", role = c("aut", "ctb")),
+    person("Pei-Chun", "Shen", role = c("aut", "ctb")),
+    person("Wen-Jen", "Lin", role = c("aut","ctb"))
+    )
+Description: 
+    SigFun provides a streamlined workflow for analyzing transcriptomic data and relating it to specific gene signatures. 
+    It takes a gene signature and transcriptome profile as input. 
+    n essence, this package helps researchers understand the functional implications of a gene signature by identifying which biological pathways or processes are significantly enriched in datasets where the signature is prominent. 
+    It automates the GSEA process and provides visualizations to aid in interpretation.
+License: MIT + file LICENSE
+URL: https://github.com/TMSWCChenglab/SigFun
+BugReports: https://github.com/TMSWCChenglab/SigFun/issues
+LazyData: FALSE
+biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG
+Depends:
+    R (>= 4.4.0)
+Imports: rlang, BiocGenerics, methods, S4Vectors, data.table, dplyr, SummarizedExperiment, magrittr, cowplot, fgsea, ggplot2, ggpubr, readr, tibble, tidyr, scales, stringr
+Suggests: devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
+Enhances: 
+VignetteBuilder: knitr
+Config/Needs/website: usethis, servr
+Config/potools/style: explicit
+Config/testthat/edition: 3
+Config/testthat/parallel: true
+BuildVignettes: true
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Collate: 
+    'check.R'
+    'demo_GSE180962.R'
+    'demo_GSE181574.R'
+    'demo_GSE194040.R'
+    'globals.R'
+    'pathway_all.R'
+    'plot_bar.R'
+    'plot_heat.R'
+    'sig2GSEA.R'
+    'sigCor.R'
+    'utility.R'
+    'sig2Fun.R'
+    'sigFun.R'
