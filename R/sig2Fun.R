@@ -14,7 +14,7 @@
 #'        pathway database
 #'        See vignette for detailed structure requirements.
 #' @param ranking.method Character. Method to rank genes for pathway analysis:
-#'        - "stat" (default): Use test statistics
+#'        - "cor" (default): Use test statistics
 #'        - "pval": Use p-values
 #' @param species Character. Organism of the dataset:
 #'        - "human" (default)
@@ -24,7 +24,7 @@
 #'        - "pearson": For linear relationships
 #'        - "kendall": For non-parametric rank correlation
 #'        - "logit": For binary signatures (e.g., high/low risk classification)
-#' @param pathways_all List containing biological functions and their
+#' @param t2g List containing biological functions and their
 #' corresponding genes.
 #'        Should be obtained from MSigDB (e.g., msigdb.v2023.1.Hs.symbols.gmt)
 #'        or a custom gene set.
@@ -67,8 +67,6 @@
 #' @importFrom utils write.csv
 #' @include utility.R
 #' @include sigCor.R
-#' @include sig2GSEA.R
-#' @include plot_bar.R
 #' @include plot_heat.R
 #' @export
 #'
@@ -82,47 +80,56 @@
 #'   ranking.method = "stat",
 #'   species = "human",
 #'   cor.method = "logit",  # Use logit for binary variables
-#'   pathways_all = pathways.all,
 #'   topN = 10,
 #'   Z.transform = FALSE,  # No normalization needed for binary variables
 #'   significat_type = "pval",
 #'   strings = c("HALLMARK")
 #' )
 #'
-#' # To visualize results:
-#' # 1. Bar plot: res$barplots
-#' # 2. Heatmap: res$heatmap
+#' # To visualize Heatmap results: res$heatmap
 
-sig2Fun <- function(SE_data, ranking.method="stat", species="human",
-                    cor.method="spearman", pathways_all,
-                    topN=10, Z.transform=FALSE, significat_type="pval",
-                    strings=c("GOBP","GOCC","GOMF","KEGG","REACTOME","WP","HALLMARK","SIGNALING")) {
+sig2Fun <- function(SE_data, t2g, ranking.method="cor", topN=10,
+species="human", cor.method="spearman", Z.transform=FALSE,
+significant_type="pval", strings=c("GOBP","REACTOME","HALLMARK","SIGNALING")) {
     .classCheck(SE_data, "SummarizedExperiment")
-    .classCheck(pathways_all, "list")
-
+    .classCheck(t2g, "data.frame")
+    pathway.name <- unique(t2g$gs_name)
+    new_pathways.all <- lapply(pathway.name, function(x){
+        res <- t2g %>% dplyr::filter(gs_name==x) %>%
+        dplyr::select(ensembl_gene) %>%
+        dplyr::pull()
+        return(res)
+    })
+    names(new_pathways.all) <- pathway.name
     SE_data.cor <- SE_data
-        if(!("cor.df" %in% names(metadata(SE_data.cor)))){
+        if(!("cor.df" %in% names(S4Vectors::metadata(SE_data.cor)))){
             SE_data.cor <- sigCor(SE_data=SE_data, cor.method=cor.method,
-             Z.transform=Z.transform)
-            metadata(SE_data.cor) <- list(cor.df=metadata(SE_data.cor)$cor.df)
+            Z.transform=Z.transform)
+            S4Vectors::metadata(SE_data.cor) <-
+                list(cor.df=S4Vectors::metadata(SE_data.cor)$cor.df)
         }
+
+    geneList <- SE_data.cor@metadata$cor.df %>%
+        dplyr::select(all_of(ranking.method)) %>% dplyr::pull()
+    names(geneList) <- SE_data.cor@metadata$cor.df$gene
+    geneList <- sort(geneList, decreasing = TRUE)
+    clusterProfiler <- clusterProfiler::GSEA(geneList, TERM2GENE = t2g)
+
     SE_data.fgsea <- SE_data.cor
-        if(!("fgseaRes" %in% names(metadata(SE_data.fgsea)))){
-            SE_data.fgsea <- sig2GSEA(SE_data.cor=SE_data.cor,
-                ranking.method=ranking.method,
-                pathways.all=pathways_all)
-            metadata(SE_data.fgsea) <- list(fgsea=metadata(SE_data.fgsea)$fgsea,
-                                            cor.df=metadata(SE_data.cor)$cor.df)
-        }
+    S4Vectors::metadata(SE_data.fgsea) <- list(gseaResult=clusterProfiler,
+                                cor.df=S4Vectors::metadata(SE_data.cor)$cor.df)
 
-    barplots <- plot_bar(SE_data.fgsea=SE_data.fgsea,
-    topN=topN, significat_type=significat_type, strings=strings)
-    SE_data.fgsea$barplots <- barplots
-
-    heatmap <- plot_heat(SE_data.fgsea=SE_data.fgsea,
-        strings=strings, significat_type=significat_type, topN=topN,
-        pathways.all=pathways_all, ranking.method=ranking.method)
-    SE_data.fgsea$heatmap  <- heatmap
+    # heatmap
+    heatmap.list <- NULL
+    for(i in seq_along(strings)){
+        heatmap.list[[strings[i]]] <- plot_heat(
+            SE_data.fgsea=SE_data.fgsea,
+            pathways.all=new_pathways.all,
+            significant_type=significant_type,
+            strings=strings[i],
+            topN=topN, ranking.method=ranking.method)
+    }
+    SE_data.fgsea@metadata$heatmap  <- heatmap.list
 
     return(SE_data.fgsea)
 }

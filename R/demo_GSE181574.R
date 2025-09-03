@@ -46,6 +46,6 @@
 #'
 #' @docType data
 #' @keywords datasets
-#' @name SE_GSE181574
+#' @name demo_GSE181574
 #' @usage data(demo_GSE181574)
 NULL
