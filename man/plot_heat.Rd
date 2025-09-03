@@ -6,12 +6,14 @@
 \usage{
 plot_heat(
   SE_data.fgsea,
-  significat_type = "pval",
-  strings = c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP", "HALLMARK"),
+  significant_type = "pval",
   topN = 10,
   pathways.all,
-  ranking.method = "stat",
-  plot_out = TRUE
+  strings = c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP", "HALLMARK"),
+  ranking.method = "cor",
+  colwidths = c(0.8, 0.8, 0.8, 3.6, 5),
+  breaklineN = 30,
+  fontSize = 8
 )
 }
 \arguments{
@@ -21,28 +23,41 @@ plot_heat(
 \item{\code{fgseaRes} in metadata: GSEA results from \code{sig2GSEA}}
 }}
 
+\item{topN}{Integer. Number of top significant pathways to display per
+category (default=10).}
+
+\item{pathways.all}{List. Pathway database from MSigDB
+(e.g. msigdb.v2023.1.Hs.symbols.gmt).}
+
+\item{strings}{Character vector. Pathway categories to visualize
+(e.g. "HALLMARK", "KEGG").
+Default includes major MSigDB collections.}
+
+\item{ranking.method}{Character. Ranking metric used in GSEA:
+\itemize{
+\item{"core" (default): Correlation statistics}
+\item{"pval": P-values from correlation analysis}
+}}
+
+\item{colwidths}{Vector of five elements corresponding to column width for
+grid.arrange}
+
+\item{breaklineN}{An integer specifying the number of characters after which
+to break pathway names into multiple lines for better readability.
+Default is \code{30}.}
+
+\item{fontSize}{Numeric value used to control pathway label font size.}
+
 \item{significat_type}{Character. Significance metric for filtering:
 \itemize{
 \item{"pval" (default): Use nominal p-values}
 \item{"qval": Use false discovery rate adjusted q-values}
 }}
-
-\item{strings}{Character vector. Pathway categories to visualize (e.g. "HALLMARK", "KEGG").
-Default includes major MSigDB collections.}
-
-\item{topN}{Integer. Number of top significant pathways to display per category (default=10).}
-
-\item{pathways.all}{List. Pathway database from MSigDB (e.g. msigdb.v2023.1.Hs.symbols.gmt).}
-
-\item{ranking.method}{Character. Ranking metric used in GSEA:
-\itemize{
-\item{"stat" (default): Correlation statistics}
-\item{"pval": P-values from correlation analysis}
-}}
 }
 \value{
-Returns a list of ggplot objects containing heatmaps, with one element per category
-specified in \code{strings}. Each heatmap contains four panels:
+Returns a list of ggplot objects containing heatmaps, with one
+element per category specified in \code{strings}. Each heatmap contains four
+panels:
 \enumerate{
 \item{NES values}
 \item{Significance values (-log10 transformed)}

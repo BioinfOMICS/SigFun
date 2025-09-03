@@ -5,7 +5,11 @@
 \alias{SigFun}
 \title{SigFun: A Functional Analysis Tool for Signature.}
 \description{
-SigFun provides a systematic workflow for analyzing biological functions associated with multi-gene signatures, overcoming limitations of conventional methods for small gene sets. The package enables functional interpretation of signatures in various formats (binary classifications, continuous scores) by leveraging whole transcriptome data as a surrogate.
+SigFun provides a systematic workflow for analyzing biological functions
+associated with multi-gene signatures, overcoming limitations of conventional
+methods for small gene sets. The package enables functional interpretation
+of signatures in various formats (binary classifications, continuous scores)
+by leveraging whole transcriptome data as a surrogate.
 }
 \section{Key Features}{
 
@@ -21,9 +25,10 @@ SigFun provides a systematic workflow for analyzing biological functions associa
 \section{Main Workflow}{
 
 \enumerate{
-\item \code{\link{sigCor}}: Calculate genome-wide correlations between signature and transcriptome
-\item \code{\link{sig2GSEA}}: Perform pathway enrichment analysis using correlation statistics
-\item \code{\link{plot_bar}}/\code{\link{plot_heat}}: Visualize significant pathways
+\item \code{\link{sigCor}}: Calculate genome-wide correlations between
+signature and transcriptome
+\item \code{\link{plot_bar}}/\code{\link{plot_heat}}: Visualize significant
+pathways
 \item \code{\link{sig2Fun}}: Complete analysis pipeline in one function
 }
 }
@@ -47,7 +52,8 @@ BiocManager::install("SigFun")
 \section{Datasets}{
 
 \describe{
-\item{\code{SE_GSE181574}}{Breast cancer cohort with MammaPrint classification}
+\item{\code{SE_GSE181574}}{Breast cancer cohort with MammaPrint
+classification}
 \item{\code{pathways.all}}{MSigDB pathway collection (subset)}
 }
 }

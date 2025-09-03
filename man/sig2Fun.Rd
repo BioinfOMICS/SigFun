@@ -6,14 +6,14 @@
 \usage{
 sig2Fun(
   SE_data,
-  ranking.method = "stat",
+  t2g,
+  ranking.method = "cor",
+  topN = 10,
   species = "human",
   cor.method = "spearman",
-  pathways_all,
-  topN = 10,
   Z.transform = FALSE,
-  significat_type = "pval",
-  strings = c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME", "WP", "HALLMARK", "SIGNALING")
+  significant_type = "pval",
+  strings = c("GOBP", "REACTOME", "HALLMARK", "SIGNALING")
 )
 }
 \arguments{
@@ -24,9 +24,19 @@ sig2Fun(
 pathway database
 See vignette for detailed structure requirements.}
 
+\item{t2g}{List containing biological functions and their
+corresponding genes.
+Should be obtained from MSigDB (e.g., msigdb.v2023.1.Hs.symbols.gmt)
+or a custom gene set.
+Each list element represents a pathway with genes as vector elements.}
+
 \item{ranking.method}{Character. Method to rank genes for pathway analysis:
-- "stat" (default): Use test statistics
+- "cor" (default): Use test statistics
 - "pval": Use p-values}
+
+\item{topN}{Integer. Number of top significant functions to display in output
+plots.
+Default is 10.}
 
 \item{species}{Character. Organism of the dataset:
 - "human" (default)
@@ -38,32 +48,22 @@ See vignette for detailed structure requirements.}
 - "kendall": For non-parametric rank correlation
 - "logit": For binary signatures (e.g., high/low risk classification)}
 
-\item{pathways_all}{List containing biological functions and their
-corresponding genes.
-Should be obtained from MSigDB (e.g., msigdb.v2023.1.Hs.symbols.gmt)
-or a custom gene set.
-Each list element represents a pathway with genes as vector elements.}
-
-\item{topN}{Integer. Number of top significant functions to display in output
-plots.
-Default is 10.}
-
 \item{Z.transform}{Logical. Whether to perform z-transformation on gene
 expression data:
 - FALSE (default): No transformation
 - TRUE: Apply z-transformation (standardization)
 For binary signatures (e.g., using logit correlation), set to FALSE.}
 
-\item{significat_type}{Character. Method for statistical significance
-filtering:
-- "pval": Use p-values (default)
-- "qval": Use Q-values (adjusted p-values)}
-
 \item{strings}{Character vector. Specifies which pathway categories to
 include in visualization.
 Default includes: c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME",
 "WP", "HALLMARK", "SIGNALING")
 For example, "HALLMARK" will filter for pathways containing it.}
+
+\item{significat_type}{Character. Method for statistical significance
+filtering:
+- "pval": Use p-values (default)
+- "qval": Use Q-values (adjusted p-values)}
 }
 \value{
 Returns an enhanced SummarizedExperiment object with additional slots
@@ -96,14 +96,11 @@ res <- sig2Fun(
   ranking.method = "stat",
   species = "human",
   cor.method = "logit",  # Use logit for binary variables
-  pathways_all = pathways.all,
   topN = 10,
   Z.transform = FALSE,  # No normalization needed for binary variables
   significat_type = "pval",
   strings = c("HALLMARK")
 )
 
-# To visualize results:
-# 1. Bar plot: res$barplots
-# 2. Heatmap: res$heatmap
+# To visualize Heatmap results: res$heatmap
 }

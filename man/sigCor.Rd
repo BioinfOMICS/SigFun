@@ -25,13 +25,15 @@ sigCor(SE_data, cor.method = "spearman", Z.transform = FALSE)
 \item{Z.transform}{Logical. Whether to z-score normalize expression data:
 \itemize{
 \item \code{FALSE} (default): No transformation (recommended for binary signatures)
-\item \code{TRUE}: Standardize expression values (recommended for continuous signatures)
+\item \code{TRUE}: Standardize expression values (recommended for continuous
+signatures)
 }}
 }
 \value{
 Returns a modified \code{SummarizedExperiment} object with:
 \itemize{
-\item \code{cor.df} in metadata: Dataframe containing correlation statistics with columns:
+\item \code{cor.df} in metadata: Dataframe containing correlation statistics with
+columns:
 \itemize{
 \item \code{gene}: ENSEMBL ID
 \item \code{cor}: Correlation coefficient (or log-odds for logit)
@@ -39,7 +41,10 @@ Returns a modified \code{SummarizedExperiment} object with:
 }
 }
 \description{
-Calculates genome-wide correlations between a clinical signature and gene expression profiles. This core function of the SigFun package bridges phenotypic signatures with transcriptomic data to enable downstream functional analysis.
+Calculates genome-wide correlations between a clinical signature
+and gene expression profiles. This core function of the SigFun package
+bridges phenotypic signatures with transcriptomic data to enable downstream
+functional analysis.
 }
 \details{
 This function performs three key operations:

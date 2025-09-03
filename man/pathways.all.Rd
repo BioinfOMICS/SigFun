@@ -20,7 +20,8 @@ data(demo_GSE181574)
 }
 \description{
 A curated collection of biological pathways and gene sets from
-MSigDB (Molecular Signatures Database) used for Gene Set Enrichment Analysis (GSEA).
+MSigDB (Molecular Signatures Database) used for Gene Set Enrichment Analysis
+(GSEA).
 Contains pathways from major collections including:
 \itemize{
 \item{Gene Ontology (GO) Biological Processes (GOBP)}
