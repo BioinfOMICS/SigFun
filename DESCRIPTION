@@ -1,10 +1,10 @@
 Package: SigFun
 Type: Package
 Title: SigFun
-Version: 0.99.0
+Version: 0.99.11
 Authors@R: c(
     person("Wei-Chung", "Cheng", email="chenglabomics@gmail.com", 
-    role = c("aut","cre","cph"), 
+    role = c("aut","cre","cph","fnd"), 
     comment = c(ORCID = "0000-0002-1229-4857")),
     person("Chia-Hsin ", "Liu", role = c("aut", "ctb")),
     person("Pei-Chun", "Shen", role = c("aut", "ctb")),
@@ -19,13 +19,13 @@ License: MIT + file LICENSE
 URL: https://github.com/TMSWCChenglab/SigFun
 BugReports: https://github.com/TMSWCChenglab/SigFun/issues
 LazyData: FALSE
-biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG
+biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG, GeneSetEnrichment
 Depends:
     R (>= 4.4.0)
-Imports: rlang, BiocGenerics, methods, S4Vectors, data.table, dplyr, SummarizedExperiment, magrittr, cowplot, fgsea, ggplot2, ggpubr, readr, tibble, tidyr, scales, stringr
-Suggests: devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
-Enhances: 
+Imports: S4Vectors, dplyr, ggplot2, ggpubr, tibble, tidyr, scales, stringr, DOSE, GseaVis, circlize, cli, enrichplot (>= 1.26.6), forcats, igraph, randomcoloR, yulab.utils
+Suggests: devtools, roxygen2, SummarizedExperiment, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
 VignetteBuilder: knitr
+Enhances: 
 Config/Needs/website: usethis, servr
 Config/potools/style: explicit
 Config/testthat/edition: 3
@@ -35,16 +35,25 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Collate: 
+    'barPlot.R'
     'check.R'
-    'demo_GSE180962.R'
+    'chordPlot.R'
+    'cnetPlot.R'
     'demo_GSE181574.R'
-    'demo_GSE194040.R'
+    'dotPlot.R'
+    'emapPlot.R'
     'globals.R'
+    'gseaPlot.R'
+    'heatPlot.R'
+    'lollipopPlot.R'
     'pathway_all.R'
-    'plot_bar.R'
     'plot_heat.R'
-    'sig2GSEA.R'
+    'ridgePlot.R'
     'sigCor.R'
     'utility.R'
     'sig2Fun.R'
     'sigFun.R'
+    'treePlot.R'
+    'upsetplot.R'
+    'utils-plot.R'
+    'utils-se.R'
