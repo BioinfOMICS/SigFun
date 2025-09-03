@@ -1,0 +1,367 @@
+---
+title: "Analyzing Biological Functions of the Signature with SigFun: A Quick 
+Start"
+package: SigFun
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{QuickStart}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r style, echo=FALSE, results='asis'}
+BiocStyle::markdown(css.files = c('custom.css'))
+knitr::opts_chunk$set(collapse=TRUE, comment="#>")
+```
+
+# Introduction
+In the era of precision medicine, biomarker exploration is pivotal. The field 
+has increasingly shifted from single-gene markers to multi-gene signatures, 
+which better capture the complex biological mechanisms underlying disease. 
+However, a comprehensive understanding of the holistic biological function of 
+these signatures remains a significant challenge, limiting severely hinder 
+deeper investigation into the mechanisms driving a signature's predictive power.
+
+To address these challenges, we have developed `SigFun`, an innovative 
+computational framework. SigFun is designed to overcome the shortcomings of 
+existing strategies by leveraging whole-transcriptome data for a systematic 
+analysis of a signature’s function. This approach bypasses the constraints of 
+single-gene interpretation, small gene sets, and arbitrary patient 
+stratification. The tool provides system-level insights into clinically 
+validated yet mechanistically opaque signatures, effectively bridging the 
+critical gap between established utility and biological understanding. 
+
+The package one main and several visualization functions:
+
+1. **sig2Fun()** – Performs the core SigFun function to analyze the signature.
+2. **plot_heat()** – Visualizes analysis results with an integrative heatmap.
+3. **barPlot()** – Visualizes analysis results with a bar plot.
+4. **chordPlot()** – Visualizes analysis results with a chord plot.
+5. **cnetPlot()** – Visualizes analysis results with a concept network.
+6. **dotPlot()** – Visualizes analysis results with a dot plot.
+7. **emapPlot()** – Visualizes analysis results with a enrichment map plot.
+8. **gseaPlot()** – Visualizes analysis results with a enrichment score plot.
+9. **heatPlot()** – Visualizes analysis results with a heat plot.
+10. **lollipopPlot()** – Visualizes analysis results with a lollipop plot.
+11. **ridgePlot()** – Visualizes analysis results with a ridge plot.
+12. **treePlot()** – Visualizes analysis results with a tree plot.
+13. **upsetPlot()** – Visualizes analysis results with a UpSet plot.
+
+In addition to these core functions, several helper functions are available to 
+facilitate the exploration and extraction of results from the returned object.
+
+For more details, please refer to the [Helper Functions section](#helper).
+
+
+# Installation 
+To install `LipidTrend`, ensure that you have R 4.4.0 or later installed 
+(see the R Project at [http://www.r-project.org](http://www.r-project.org)) 
+and are familiar with its usage.
+
+`SigFun` package is available on GitHub repository
+[https://github.com/BioinfOMICS/SigFun](https://github.com/BioinfOMICS/SigFun). 
+Before installing `SigFun`, you must first install the core Bioconductor 
+packages. If you have already installed them, you can skip the following step.
+```{r install_Bioconductor, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+```
+
+Once the core Bioconductor packages are installed, you can proceed with 
+installing `SigFun`.
+```{r install_package, eval=FALSE}
+## Update repositories
+options(repos = c(
+    CRAN = "https://cloud.r-project.org/",
+    BiocManager::repositories()))
+
+## Install dependencies and package
+devtools::install_github(
+    "BioinfOMICS/SigFun", 
+    build_vignettes = TRUE, dependencies = TRUE)
+``` 
+
+After the installation is complete, you’re ready to start using `SigFun`.
+Now, let’s load the package first.
+```{r load, message=FALSE}
+library(SigFun)
+library(dplyr)
+```
+
+# Data preparation
+`SigFun` requires a SummarizedExperiment object as input data.
+You can use the helper function `.synchonize_SE` to construct the object by 
+providing your signature data, expression data, and gene ID mapping data.
+Please refer to the [Constructing SummarizedExperiment object](#ConstructSE).
+
+This S4 object must contain the following components:
+
+1. **Assay**: A numeric matrix representing gene expression values, 
+where each row corresponds to a gene and each column to a sample. 
+Please ensure the values meet the following requirements:
+    
+    * Preprocessing required: Before using `SigFun`, the abundance data
+    must undergo preprocessing to address missing or noisy values. This
+    preprocessing should include filtering, imputation, and normalization.
+    * Value constraints: Zero values are acceptable; however, character value
+    ("NULL") are not supported and must be handled during preprocessing.
+    
+2. **RowData**: A data frame containing gene ID information 
+(e.g. ensg_id, gene_symbol, gene_biotype), where each row corresponds to a gene 
+and each column to a specific gene information
+
+    * The number and order of rows must exactly match those in the abundance 
+    matrix (Assay).
+    * This component must include at least the three columns:
+        * `ensg_id`: ENSG ID.
+        * `gene_symbol`: official gene symbol.
+        * `gene_biotype`: annotate the gene is protein coding or not.
+
+3. **ColData**: A data frame containing signature score for each sample.
+
+    * Each row must correspond to a sample, matching the column order of 
+    the Assay matrix.
+    * The columns are required to be arranged accordingly:
+        * `sample_id`: A unique identifier for each sample.
+        * `value`: A signature score (numeric or binary).
+
+If you are already familiar with constructing a SummarizedExperiment object, 
+you can skip the following section. Otherwise, refer to the example in the rest 
+of this section to learn how to build a SummarizedExperiment object.
+
+## Assay: expression data
+The expression data is a matrix containing gene expression values across genes 
+and samples, where rows represent genes and columns represent samples.
+```{r expression}
+data("demo_GSE181574")
+
+# view the expression data of the demo dataset
+expr.data %>%
+    DT::datatable(
+        options = list(pageLength = 10, scrollX = TRUE)
+    )
+```
+
+## RowData: gene ID information data
+The gene IF table is a data frame containing information about 
+each gene , such as the number of double bonds and chain 
+length. 
+The order of the gene in this table must align with the expression data.
+The table must have at least the following three columns:
+    * ensg_id: ENSG ID.
+    * gene_symbol: official gene symbol.
+    * gene_biotype: annotate the gene is protein coding or not.
+
+In this example, we demonstrat gene ID information data in the demo dataset.
+```{r char_table}
+# view gene information data
+mapping %>%
+    DT::datatable(
+        options = list(pageLength = 10, scrollX = TRUE)
+    )
+```
+
+## ColData: patient signature data
+The patient signature data is a data frame containing signature score 
+corresponding to the samples in the gene expression data. It must adhere to the 
+following requirements:
+
+1. The columns must be arranged in the following order: `sample_id` and `value`.
+2. All sample names must be unique.
+3. The sample names in the `sample_id` column must match those in the lipid 
+abundance data.
+4. The columns `sample_id` and `value` must not contain missing values (NA).
+
+For example:
+```{r groupInfo}
+# view group information table
+SIG_MAT %>%
+    DT::datatable(
+        options = list(pageLength = 10, scrollX = TRUE)
+    )
+```
+
+## Constructing SummarizedExperiment object {#ConstructSE}
+Once the expression data, gene information data, and patient signature data are 
+prepared, we can construct the input SummarizedExperiment object. 
+We will use the `SummarizedExperiment` function from 
+`r Biocpkg("SummarizedExperiment")`. 
+
+Follow the command below to create this object.
+```{r build_se}
+# If your data is organized and ordered as the requirement,
+# you can use the generic function of SummarizedExperiment.
+SE_data <- SummarizedExperiment::SummarizedExperiment(
+    assays=list(abundance=as.matrix(expr.data)),
+    rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
+    colData=S4Vectors::DataFrame(SIG_MAT))
+
+# Check it
+show(SE_data)
+```
+
+# Initiate SigFun workflow
+
+The `SigFUn` workflow starts with a SummarizedExperiment object as input. 
+It supports both numeric and binary (1/0) signature input.
+
+Based on the type of signature input, we should choose different methods in 
+`sig2Fun`:
+
+* Numeric: cor.method="spearman"(default) or "pearson" or "kendall"
+* Binary: cor.method="logit" (univarite logistic regression).
+
+This streamlined workflow enables researchers to identify biological functions 
+associated with signature with biological interpretability.
+
+## Load demo dataset {#sig2Fun}
+To begin, we will first examine the structure of the example input data to 
+ensure it is correctly formatted for SigFun analysis.
+
+```{r demo_GSE181574}
+# load example data
+data("demo_GSE181574")
+GSE181574.sigfun <- SummarizedExperiment::SummarizedExperiment(
+    assays=list(abundance=as.matrix(expr.data)),
+    rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
+    colData=S4Vectors::DataFrame(SIG_MAT))
+
+# quick look of SE structure
+show(GSE181574.sigfun)
+
+# one-click function for the signature analysis
+# The signature in this demo is a binary(1/0) classification signature.
+GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
+    cor.method = "logit", 
+    t2g = t2g, # the ontology dataset
+    strings=c("GOBP","GOCC","GOMF","KEGG", 
+            "REACTOME","WP","HALLMARK","SIGNALING"))
+
+show(GSE181574.sigfun.res)
+```
+
+## Analyze Signature profile: Run sig2Fun With the Object You Build
+**Overview of SigFun Analysis**
+The `sig2Fun` function analyzes the gene signature and identifies their 
+associated biological functions by using the whole transcriptome as a surrogate.
+It can handle signatures in various formats including binary values (e.g.,  
+high/low risk classifications) and continuous values (e.g., prognostic risk 
+scores).
+
+The ontology database `t2g`(ontology term to gene) is provided in the demo set.
+It can be applied in most analysis cases using human samples, please refer to 
+[Help Note section](#helper).
+
+**Note:**  
+- If `cor.method=spearman` (default), the function performs Spearman rank 
+correlation between signature and gene expression profile. <br>
+- If `cor.method=logit`, the function performs logistic regression analysis.<br>
+<br>
+
+**Recommendation:**
+Set `split_chain=spearman` when analyzing signature in numeric/integer value.
+Set `split_chain=logit` when analyzing signature in binary (1/0) value.
+
+```{r sig2Fun, warning=FALSE}
+library(SigFun)
+library(dplyr)
+
+# Run sig2Fun with the object you build
+GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
+    cor.method = "logit", 
+    t2g = t2g, # the ontology dataset
+    strings=c("GOBP","GOCC","GOMF","KEGG", 
+            "REACTOME","WP","HALLMARK","SIGNALING"))
+
+# view the result summary 
+show(GSE181574.sigfun.res)
+```
+
+## Gene Set Enrichment Analysis Result
+```{r GSEA_result, warning=FALSE}
+# GSEA result table
+GSEA_result <- GSE181574.sigfun.res@metadata$gseaResult@result 
+
+# view top 10 functions positively (up-regulated) related to the signature
+GSEA_result %>% dplyr::slice(grep("GOBP",GSEA_result$ID)) %>%
+    dplyr::arrange(desc(NES)) %>%
+    dplyr::select(ID, Description, NES, pvalue, p.adjust, qvalue) %>%
+    DT::datatable(
+        options = list(pageLength = 10, scrollX = TRUE)
+    )
+
+# view top 10 functions negatively (down-regulated) related to the signature
+GSEA_result %>% dplyr::slice(grep("GOBP",GSEA_result$ID)) %>%
+    dplyr::arrange(NES) %>%
+    dplyr::select(ID, Description, NES, pvalue, p.adjust, qvalue) %>%
+    DT::datatable(
+        options = list(pageLength = 10, scrollX = TRUE)
+    )
+```
+
+## Gene Set Enrichment Analysis Result Visualization
+This section demonstrates how to visualize the results from the `sig2Fun` 
+object returned by the `plot_heat()` function.
+
+```{r plot heatmap}
+# plot result
+All_heatmaps <- GSE181574.sigfun.res@metadata$heatmap
+
+# heatmap of GO Biological Function ontology
+All_heatmaps$GOBP
+# heatmap of HALLMARK ontology
+All_heatmaps$HALLMARK
+```
+
+The visualization illustrates the most significant functions 
+associated with the signature and includes the following components:
+
+1. **Carplot (left)** – Visualization of NES values.
+2. **NES (middel-left)** – The statistics analysis results: NES with p-value.
+3. **Enrichment plot (middel-right)** – The distribution of genes of the 
+function among the whole transcriptome.
+4. **Function name (right)** – The official name of the function.
+
+**For more visualization, refer to the vignette: Customized Visualization 
+functions in SigFun.** Twelve distinct visualization options are available to 
+enable the inspection and interpretation of results from various analytical 
+viewpoints.
+
+# Help Note –  {#helper}
+## Prepare the ontology dataset
+``` {r t2g_prepare, warning=FALSE}
+# Prepare gene ontology data. We strongly recommend MsigDB.
+# The following code can help you to 
+if (!require(msigdbr, quietly = TRUE)) {
+    install.packages("msigdbr")
+    library(msigdbr)
+}
+# Download human HALLMARKER ontology information
+H_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "H") %>% 
+    dplyr::select(gs_name, ensembl_gene)
+
+# Download human C2 pathway information
+C2_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C2") %>% 
+    dplyr::filter(gs_subcat %in% c("CP:BIOCARTA","CP:KEGG_MEDICUS",
+                                   "CP:REACTOME","CP:WIKIPATHWAYS")) %>% 
+    dplyr::select(gs_name, ensembl_gene)
+# Download human C5 ontology information
+C5_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C5") %>% 
+    dplyr::filter(gs_subcat %in% c("GO:BP","GO:CC","GO:MF")) %>% 
+    dplyr::select(gs_name, ensembl_gene)
+
+# Combine them
+t2g <- rbind(H_t2g, C2_t2g, C5_t2g)
+
+```
+
+# Session info
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```
