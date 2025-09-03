@@ -1,6 +1,11 @@
 library(testthat)
 library(ggplot2)
 
+# Ensure the package is properly loaded
+if (!isNamespaceLoaded("SigFun")) {
+    requireNamespace("SigFun", quietly = TRUE)
+}
+
 test_that(".nesbarplot function works correctly", {
   # Test positive NES value
   positive_nes <- 0.75
