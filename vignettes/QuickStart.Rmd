@@ -238,7 +238,7 @@ show(GSE181574.sigfun)
 # one-click function for the signature analysis
 # The signature in this demo is a binary(1/0) classification signature.
 GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
-    t2g=t2g
+    t2g=t2g,
     cor.method = "logit", 
     strings=c("GOBP","HALLMARK","SIGNALING"))
 
