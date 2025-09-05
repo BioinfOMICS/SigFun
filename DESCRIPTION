@@ -23,7 +23,7 @@ biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, Biomedi
 Depends:
     R (>= 4.4.0)
 Imports: BiocManager, enrichplot, clusterProfiler, pandoc, S4Vectors, dplyr, ggplot2, ggpubr, tibble, tidyr, scales, stringr, DOSE, GseaVis, circlize, cli, enrichplot (>= 1.26.6), forcats, igraph, randomcoloR, yulab.utils
-Suggests: devtools, roxygen2, SummarizedExperiment, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
+Suggests: DT, devtools, roxygen2, SummarizedExperiment, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
 Additional_repositories: https://bioconductor.org/packages/release/bioc
 VignetteBuilder: knitr
 Enhances: 

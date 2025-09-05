@@ -44,6 +44,7 @@ BiocManager::install(c(
 
 ```r
 install.packages(c(
+    "DT",
     "pandoc",
     "dplyr",
     "ggplot2", 
