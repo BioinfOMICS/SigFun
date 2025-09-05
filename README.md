@@ -20,6 +20,7 @@
 ### Prerequisites
 
 Ensure you have R 4.4.0 or later installed. You can download R from [http://www.r-project.org](http://www.r-project.org).
+If you are Windows user, install RTools following the guide in the CRAN official wed site [https://cran.r-project.org/bin/windows/](https://cran.r-project.org/bin/windows/).
 
 ### Install Dependencies
 
