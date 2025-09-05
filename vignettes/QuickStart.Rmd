@@ -239,9 +239,7 @@ show(GSE181574.sigfun)
 # The signature in this demo is a binary(1/0) classification signature.
 GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
     cor.method = "logit", 
-    t2g = t2g, # the ontology dataset
-    strings=c("GOBP","GOCC","GOMF","KEGG", 
-            "REACTOME","WP","HALLMARK","SIGNALING"))
+    strings=c("GOBP","HALLMARK","SIGNALING"))
 
 show(GSE181574.sigfun.res)
 ```
