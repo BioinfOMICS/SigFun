@@ -1,6 +1,5 @@
 # SigFun
 
-[![R-CMD-check](https://github.com/BioinfOMICS/SigFun/workflows/R-CMD-check/badge.svg)](https://github.com/BioinfOMICS/SigFun/actions)
 [![GitHub issues](https://img.shields.io/github/issues/BioinfOMICS/SigFun)](https://github.com/BioinfOMICS/SigFun/issues)
 [![GitHub license](https://img.shields.io/github/license/BioinfOMICS/SigFun)](https://github.com/BioinfOMICS/SigFun/blob/main/LICENSE)
 
