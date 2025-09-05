@@ -30,6 +30,8 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install(c(
+    BiocManager::install(c(
+    "org.Hs.eg.db",
     "BiocManager",
     "enrichplot", 
     "clusterProfiler",
@@ -44,6 +46,8 @@ BiocManager::install(c(
 
 ```r
 install.packages(c(
+    "msigdbr",
+    "ggridges",
     "DT",
     "pandoc",
     "dplyr",
