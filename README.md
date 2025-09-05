@@ -30,7 +30,6 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install(c(
-    BiocManager::install(c(
     "org.Hs.eg.db",
     "BiocManager",
     "enrichplot", 
