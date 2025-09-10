@@ -267,7 +267,7 @@ correlation between signature and gene expression profile. <br>
 Set `split_chain=spearman` when analyzing signature in numeric/integer value.
 Set `split_chain=logit` when analyzing signature in binary (1/0) value.
 
-```{r sig2Fun, warning=FALSE}
+```{r sig2Fun, warning=FALSE, eval=FALSE}
 library(SigFun)
 library(dplyr)
 
@@ -316,6 +316,8 @@ All_heatmaps <- GSE181574.sigfun.res@metadata$heatmap
 All_heatmaps$GOBP
 # heatmap of HALLMARK ontology
 All_heatmaps$HALLMARK
+# heatmap of SIGNALING pathways
+All_heatmaps$SIGNALING
 ```
 
 The visualization illustrates the most significant functions 
@@ -334,7 +336,7 @@ viewpoints.
 
 # Help Note –  {#helper}
 ## Prepare the ontology dataset
-``` {r t2g_prepare, warning=FALSE}
+``` {r t2g_prepare, warning=FALSE, eval=FALSE}
 # Prepare gene ontology data. We strongly recommend MsigDB.
 # The following code can help you to 
 if (!require(msigdbr, quietly = TRUE)) {

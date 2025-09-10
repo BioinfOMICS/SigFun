@@ -53,29 +53,32 @@ lollipop plot.
 We can use the build-in one-click function sig2Fun or use totally customized 
 GSEA results by modified the `cor.df` and 
 
-```{r customized_log2FC, warning=FALSE}
+## Method 1 (recommended): Use the build-in function sig2Fun
+```{r Method_1, warning=FALSE}
 library(SigFun)
 library(dplyr)
 
 #Loading an example SummarizedExperiment object.
 data(demo_GSE181574)
-GSE181574.sigfun <- SummarizedExperiment::SummarizedExperiment(
+SE_data <- SummarizedExperiment::SummarizedExperiment(
 assays=list(abundance=as.matrix(expr.data)),
 rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
 colData=SIG_MAT)
 
 # Method 1 (recommended): Use the build-in function sig2Fun
-GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
+SE_data.res <- sig2Fun(SE_data,
     cor.method = "logit", 
     t2g = t2g, # the ontology dataset
-    strings=c("GOBP","GOCC","GOMF","KEGG", 
-            "REACTOME","WP","HALLMARK","SIGNALING"))
+    strings="GOBP")
+```
 
+## Method 2:  Use your own GSEA results by modifying the cor.df and gseaResult
+```{r Method_2, warning=FALSE, eval=FALSE}
 # Method 2:  Use your own GSEA results by modifying the cor.df and gseaResult
 # Run GSEA using clusterProfiler
 # Just replace these variables with your own analysis results
-geneList <- GSE181574.sigfun.res@metadata$cor.df["cor"] %>% unlist()
-names(geneList) <- GSE181574.sigfun.res@metadata$cor.df$gene
+geneList <- SE_data.res@metadata$cor.df["cor"] %>% unlist()
+names(geneList) <- SE_data.res@metadata$cor.df$gene
 geneList <- sort(geneList, decreasing = TRUE)
 
 # Use clusterProfiler::GSEA function 
@@ -88,16 +91,16 @@ SE_data <- SummarizedExperiment::SummarizedExperiment(
     rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
     colData=S4Vectors::DataFrame(SIG_MAT))
 
-S4Vectors::metadata(GSE181574.sigfun.res) <- list(
+S4Vectors::metadata(SE_data.res) <- list(
     gseaResult=clusterProfiler,
-    cor.df=S4Vectors::metadata(GSE181574.sigfun.res)$cor.df)
+    cor.df=S4Vectors::metadata(SE_data.res)$cor.df)
 
 ```
 
 ## Plot an inntegrative heatmap {#plot_heat}
 To use `plot_heat` function, we have to transform the `t2g` dataframe to a list 
 format first. Then we can use `plot_heat` to generate a integrative heatmap.
-```{r transform, warning=FALSE}
+```{r transform, warning=FALSE, eval=FALSE}
 # Transform t2g (data.frame) to a list form
 pathway.name <- unique(t2g$gs_name)
 pathways.all <- lapply(pathway.name, function(x){
@@ -117,10 +120,10 @@ names(pathways.all) <- pathway.name
     0.05 will be omitted. It Should be appeared in the cor.df (default: "pval")
     * strings: Pathway categories to visualize. (e.g. "HALLMARK", "KEGG")
 
-```{r plot_heat, warning=FALSE}
+```{r plot_heat, warning=FALSE, eval=FALSE}
 # Use plot_heat to generate a integrative heatmap
 HALLMARK.plot <- plot_heat(
-    SE_data.fgsea=GSE181574.sigfun.res,
+    SE_data.fgsea=SE_data.res,
     pathways.all=pathways.all,
     significant_type="pval", # the column name in cor.df
     strings=c("HALLMARK"),
@@ -137,10 +140,10 @@ all functions with "SIGNALING" pattern, just specify `strings=c("SIGNALING")`,
 then all functions with SIGNALING pattern will be visualized in the integrative 
 heatmap. 
 
-```{r plot_heat_signaling, warning=FALSE}
+```{r plot_heat_signaling, warning=FALSE, eval=FALSE}
 # Use plot_heat to generate a integrative heatmap
 SIGNALING.plot <- plot_heat(
-    SE_data.fgsea=GSE181574.sigfun.res,
+    SE_data.fgsea=SE_data.res,
     pathways.all=pathways.all,
     significant_type="pval", # the column name in cor.df
     strings=c("SIGNALING"),
@@ -167,7 +170,7 @@ the y-axis, with bars colored by statistical significance measures or enrichment
 ```{r plot_bar, warning=FALSE}
 # Use barPlot to generate a bar plot.
 library(ggplot2)
-res.barplot <- barPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.barplot <- barPlot(SE_data.fgsea=SE_data.res,
         topN=10,
         breaklineN=30,
         alpha="pvalue")
@@ -209,7 +212,7 @@ connected by arcs that represent their relationships.
     include in the visualization (default=5).
 
 ```{r chordPlot, warning=FALSE}
-res.chord <- chordPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.chord <- chordPlot(SE_data.fgsea=SE_data.res,
         fontSize=0.5,
         breaklineN=30,
         showCategory=2)
@@ -243,7 +246,7 @@ sets.
     or automatic nice layout. (default=FALSE)
 
 ```{r cnetPlot, warning=FALSE}
-res.cne <- cnetPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.cne <- cnetPlot(SE_data.fgsea=SE_data.res,
     showCategory=5, 
     node_label='category',
     fontSize=1.2, 
@@ -273,7 +276,7 @@ significance and enrichment scores.
     include in the visualization (default=10).
 
 ```{r dotPlot, warning=FALSE}
-res.dot <- dotPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.dot <- dotPlot(SE_data.fgsea=SE_data.res,
         showCategory=10,
         breaklineN=20,
         color='pvalue')
@@ -297,7 +300,7 @@ similarity between pathways.
     include in the visualization (default=10).
 
 ```{r emapPlot, warning=FALSE}
-res.ema <- emapPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.ema <- emapPlot(SE_data.fgsea=SE_data.res,
         showCategory=10)
 
 res.ema$emapPlot
@@ -319,7 +322,7 @@ the process of generating enrichment score plots.
 
 
 ```{r gseaPlot, warning=FALSE}
-gseaPlot(SE_data.fgsea=GSE181574.sigfun.res,
+gseaPlot(SE_data.fgsea=SE_data.res,
         showCategory=5)
 
 ```
@@ -344,7 +347,7 @@ by correlation coefficients and sized by statistical significance measures.
     For more arguments, please refer to the manual of heatPlot.
     
 ```{r heatPlot, warning=FALSE}
-res.heat <- heatPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.heat <- heatPlot(SE_data.fgsea=SE_data.res,
         breaklineN=30, 
         showCategory=2, 
         dotSize='pval', 
@@ -372,7 +375,7 @@ processes, with pathways ordered by their enrichment scores.
 
 ```{r lollipopPlot, warning=FALSE}
 # Use lollipop to generate a bar plot.
-res.lollipop <- lollipopPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.lollipop <- lollipopPlot(SE_data.fgsea=SE_data.res,
         showCategory=10,
         breaklineN=30)
 
@@ -397,7 +400,7 @@ pathway along the ranked gene list.
     y-axis (default=30).
 
 ```{r ridgePlot, warning=FALSE}
-res.ridge <- ridgePlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.ridge <- ridgePlot(SE_data.fgsea=SE_data.res,
         showCategory=10,
         breaklineN=30)
 
@@ -421,7 +424,7 @@ color coding to represent statistical significance or other enrichment metrics.
     For more arguments, please refer to the manual of `treePlot`.
 
 ```{r treePlot, warning=FALSE}
-res.tree <- treePlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.tree <- treePlot(SE_data.fgsea=SE_data.res,
          showCategory=10, 
          color='pvalue')
 
@@ -449,7 +452,7 @@ The plot consists of two panels:
     upper panel. Must be one of "bar" or "box" (default). 
 
 ```{r upsetPlot, warning=FALSE}
-res.upsetPlot <- upsetPlot(SE_data.fgsea=GSE181574.sigfun.res,
+res.upsetPlot <- upsetPlot(SE_data.fgsea=SE_data.res,
         showCategory=5,
         breaklineN=30,
         type="box")

@@ -63,7 +63,7 @@ to use the log2 fold change values for ranking, the argument would be set as
 
 ## Analyze Signature Functions with Customized Analysis Results.
 **Build the S4 object**
-```{r customized_log2FC, warning=FALSE}
+```{r customized_log2FC, warning=FALSE, eval=FALSE}
 library(SigFun)
 library(dplyr)
 data(demo_GSE181574)
@@ -92,14 +92,16 @@ SummarizedExperiment::rowData(SE_data)$ensg_id |> head()
 It is important to correctly set the ranking.method parameter. This parameter 
 tells `sig2Fun` which column name in your custom `cor.df` dataframe to use for 
 the GSEA analysis.
-```{r sig2Fun, warning=FALSE}
+```{r sig2Fun_default, warning=FALSE, eval=FALSE}
 # Run sig2Fun with the log2FC result.
 GSE181574.sigfun.res <- sig2Fun(SE_data,
     ranking.method = "log2FC",  # Must matched with your column name in cor.df.
     t2g = t2g, # the ontology dataset
     strings=c("GOBP","GOCC","GOMF","KEGG", 
             "REACTOME","WP","HALLMARK","SIGNALING"))
+```
 
+```{r other_statistics, warning=FALSE, eval=FALSE}
 # Of course, you can use other columns in cor.df by specifying "ranking.method".
 GSE181574.sigfun.res <- sig2Fun(SE_data,
     ranking.method = "other_statistics",
