@@ -31,7 +31,7 @@ subsequently stored within the object's metadata. In the context of this
 demonstration, the signature score is a binary variable. Consequently, logistic 
 regression is employed for the analysis, which is invoked by setting the 
 `cor.method` parameter to "logit".
-```{r sigCor, warning=FALSE}
+```{r sigCor, warning=FALSE, eval=FALSE}
 library(SigFun)
 library(dplyr)
 
@@ -55,7 +55,7 @@ SE_data.cor <- sigCor(SE_data=SE_data, cor.method="logit")
 In SE_data.cor and we can see there is two columns 
     * cor: the statistics of analysis result. 
     * pval: the significance value (p-value of the analysis).
-```{r cor.df, warning=FALSE}
+```{r cor.df, warning=FALSE, eval=FALSE}
 S4Vectors::metadata(SE_data.cor)$cor.df %>% head()
 ```
 
@@ -63,7 +63,7 @@ S4Vectors::metadata(SE_data.cor)$cor.df %>% head()
 Here we will use the column “cor” to run GSEA analysis powered by 
 `clusterProfiler`.
 
-```{r GSEA, warning=FALSE}
+```{r GSEA, warning=FALSE, eval=FALSE}
 # Run GSEA using clusterProfiler
 geneList <- SE_data.cor@metadata$cor.df["cor"] %>% unlist()
 names(geneList) <- SE_data.cor@metadata$cor.df$gene
@@ -82,7 +82,7 @@ show(SE_data.cor)
 # Step 3. Plot the Integrative Heatmap with SigFun.
 To use `plot_heat` function, we have to transform the t2g dataframe to a list 
 format first. Then we can use plot_heat to generate a integrative heatmap.
-```{r plot, warning=FALSE}
+```{r plot, warning=FALSE, eval=FALSE}
 # Transform t2g (data.frame) to a list form
 pathway.name <- unique(t2g$gs_name)
 pathways.all <- lapply(pathway.name, function(x){
@@ -102,7 +102,7 @@ cor.df (default: “cor”)
 will be omitted. It Should be appeared in the cor.df (default: “pval”) 
 * strings: Pathway categories to visualize. (e.g. “HALLMARK”, “KEGG”)
 
-```{r plot_heat, warning=FALSE}
+```{r plot_heat, warning=FALSE, eval=FALSE}
 # Use plot_heat to generate a integrative heatmap
 HALLMARK.plot <- plot_heat(
     SE_data.fgsea=SE_data.cor,
@@ -123,7 +123,7 @@ strings=c(“SIGNALING”). This command instructs the function to isolate and
 display only those entries containing the “SIGNALING” pattern within the 
 integrative heatmap, enabling a focused visualization of relevant pathways.
 
-```{r singlaing, warning=FALSE}
+```{r singlaing, warning=FALSE, eval=FALSE}
 # Use plot_heat to generate a integrative heatmap
 SIGNALING.plot <- plot_heat(
     SE_data.fgsea=SE_data.cor,

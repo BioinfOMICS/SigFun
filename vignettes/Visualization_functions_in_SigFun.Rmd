@@ -73,6 +73,9 @@ SE_data.res <- sig2Fun(SE_data,
 ```
 
 ## Method 2:  Use your own GSEA results by modifying the cor.df and gseaResult
+Currently, visualization functions in SigFun only support the result object of
+the clusterProfiler package. [See clusterProfiler for more detail.](https://www.bioconductor.org/packages/release/bioc/html/clusterProfiler.html) 
+Here is just one example for your reference.
 ```{r Method_2, warning=FALSE, eval=FALSE}
 # Method 2:  Use your own GSEA results by modifying the cor.df and gseaResult
 # Run GSEA using clusterProfiler
