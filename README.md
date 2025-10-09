@@ -17,11 +17,11 @@
 ### Vignettes at a Glance
 
 - **QuickStart** - Minimal working example demonstrating the fastest path to results using built-in test data. *Start here to verify installation and understand the basic workflow.*
-- **Data Preparation** — How to build the required SummarizedExperiment: expression, rowData, colData, and t2g (with quick validators). *Start here if your data isn’t in SE format yet.*
-- **Streamlined Workflow** (sig2Fun) — One-call analysis that runs association → GSEA → plotting with sensible defaults. A more detailed version of the QuickStart vignette. *Best when you want results fast without custom steps.*
-- **Stepwise Workflow** (sigCor → GSEA → plots) — Runs correlation and enrichment separately so you can inspect/modify cor.df, change ranking metrics, or swap enrichment settings. Use for advanced customization.
+- **Data Preparation** — How to build the required `SummarizedExperiment`: expression, `rowData`, `colData`, and `t2g` (with quick validators). *Start here if your data isn’t in SE format yet.*
+- **Streamlined Workflow** (`sig2Fun`) — One-call analysis that runs association → GSEA → plotting with sensible defaults. A more detailed version of the QuickStart vignette. *Best when you want results fast without custom steps.*
+- **Stepwise Workflow** (`sigCor` → GSEA → plots) — Runs correlation and enrichment separately so you can inspect/modify `cor.df`, change ranking metrics, or swap enrichment settings. Use for advanced customization.
 - **Visualization Functions** — What each SigFun plotting function does (bar, dot, heat, cnet, emap, tree, ridge, lollipop, UpSet, gsea, chord diagram) with concise usage examples. *Use when crafting publication figures.*
-- **Custom Gene Ranking** — Plug in your own gene-level stats (e.g., log2FC, zscore) by attaching a cor.df and setting ranking.method. *Use when you already computed rankings externally.*
+- **Custom Gene Ranking** — Plug in your own gene-level stats (e.g., `log2FC`, `zscore`) by attaching a `cor.df` and setting `ranking.method`. *Use when you already computed rankings externally.*
 
 ## Installation
 
