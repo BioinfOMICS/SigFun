@@ -2,64 +2,92 @@
 % Please edit documentation in R/barPlot.R
 \name{barPlot}
 \alias{barPlot}
-\title{barplot}
+\title{barPlot}
 \usage{
-barPlot(SE_data.fgsea, topN = 10, breaklineN = 30, alpha = "pvalue")
+barPlot(
+  seDataFgsea,
+  topN = 10,
+  breaklineN = 30,
+  alpha = "pvalue",
+  x = "NES",
+  fontSize = 8
+)
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
 results. The object must contain:
 \itemize{
-\item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object with
-result slot containing pathway information
+\item \code{metadata(seDataFgsea)$gseaResult}: GSEA result object whose
+result slot contains pathway-level enrichment information.
 }}
 
-\item{topN}{Integer. Number of top significant pathways to display per
-category (default=10).}
+\item{topN}{Numeric. Number of top-ranked pathways to display.
+Default is \code{10}.}
 
-\item{breaklineN}{An integer specifying the number of characters after which
-to break pathway names into multiple lines for better readability on the
-y-axis. Default is \code{30}.}
+\item{breaklineN}{Integer. Maximum number of characters before wrapping
+pathway names for improved readability. Default is \code{30}.}
 
-\item{alpha}{A character string specifying which statistical measure to use
-for bar coloring transparency. Must be one of
-\code{c('pvalue', 'p.adjust', 'NES')}. Default uses argument matching.
+\item{alpha}{Character. Variable for transparency encoding.
+Must be one of \code{'pvalue'}, \code{'p.adjust'}, or \code{'qvalue'}.
 \itemize{
-\item \code{pvalue}: Raw p-values
-\item \code{p.adjust}: Adjusted p-values (multiple testing correction)
-\item \code{NES}: Normalized Enrichment Score
+\item \code{pvalue}: Raw p-values.
+\item \code{p.adjust}: Adjusted p-values (multiple testing correction).
+\item \code{qvalue}: q-values (alternative adjusted significance measure).
 }}
+
+\item{x}{Character. Variable for the x-axis.
+Must be one of \code{'NES'}, \code{'Count'}, or \code{'GeneRatio'}.
+\itemize{
+\item \code{NES}: Normalized Enrichment Score (default).
+\item \code{Count}: Number of core enrichment genes in each pathway.
+\item \code{GeneRatio}: Ratio of enriched genes to total genes in the set.
+}}
+
+\item{fontSize}{Numeric. Base font size for plot text elements.
+Default is \code{8}.}
 }
 \value{
 A named list containing two components:
+\describe{
+\item{\code{barPlot}}{A \code{ggplot2} object representing the horizontal
+bar plot, where:
 \itemize{
-\item \code{barPlot}: A \code{ggplot2} object representing a horizontal
-bar plot with:
+\item X-axis: Selected variable (\code{NES}, \code{Count}, or
+\code{GeneRatio})
+\item Y-axis: Formatted pathway names (ordered by the selected variable)
+\item Bar color: Encodes enrichment direction or significance
+\item Transparency (alpha): Proportional to \code{-log10(alpha)} of the
+chosen statistic
+}}
+\item{\code{tableBarPlot}}{A \code{data.frame} containing the underlying
+plotting data with columns:
 \itemize{
-\item X-axis: Gene count per pathway
-\item Y-axis: Formatted pathway descriptions (ordered by count)
-\item Bar color: Selected statistical measure (p-value, adjusted
-p-value, or NES)
-\item Color legend: Continuous scale for the selected measure
-}
-\item \code{Table_barPlot}: A \code{data.frame} containing the underlying
-data used for plotting with columns:
-\itemize{
-\item \code{original_name}: Original pathway identifiers
-\item \code{label_name}: Formatted pathway names with line breaks
-\item \code{Count}: Gene count for each pathway
-\item Column named by \code{color} parameter: Statistical measure
-values used for coloring
-}
+\item \code{original_name}: Original pathway identifiers.
+\item \code{label_name}: Formatted pathway names with line breaks.
+\item \code{NES / Count / GeneRatio}: The variable used on the x-axis,
+depending on the selected \code{x} parameter.
+\item \code{alpha}: Statistical values used for transparency
+(e.g., p-value, adjusted p-value, or q-value).
+\item \code{neg_log_alpha}: The transformed significance level
+calculated as \code{-log10(alpha)}.
+\item \code{alpha_value}: Rescaled transparency value ranging from 0–1,
+used for plotting alpha intensity.
+}}
 }
 }
 \description{
-The \code{barplot} function generates a horizontal bar plot
-for visualizing gene set enrichment analysis (GSEA) results. It displays the
-gene count for each pathway on the x-axis and pathway names on the y-axis,
-with bars colored by statistical significance measures or enrichment scores.
+The \code{barPlot} function generates a horizontal bar plot
+for visualizing gene set enrichment analysis (GSEA) results. It supports
+multiple x-axis variables (e.g., NES, Count, or GeneRatio) and allows
+bar coloring and transparency to be mapped by statistical significance
+measures (p-value, adjusted p-value, or q-value). This function provides
+a flexible and publication-ready visualization of pathway-level enrichment.
+}
+\note{
+Requires \pkg{ggplot2} (>= 3.5.0) and \pkg{dplyr} (>= 1.1.0) for full compatibility.
 }
 \examples{
-data("demo_GSE181574")
-barPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+barPlot(seDataFgsea = sig2Fun_result)
+
 }

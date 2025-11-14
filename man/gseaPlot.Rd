@@ -4,41 +4,86 @@
 \alias{gseaPlot}
 \title{gseaPlot}
 \usage{
-gseaPlot(SE_data.fgsea, showCategory = 5)
+gseaPlot(
+  seDataFgsea,
+  showCategory = 5,
+  title = "",
+  colorPalette = NULL,
+  fontSize = 10,
+  relHeights = c(1.5, 0.5, 1),
+  subPlots = 1:3,
+  pvalueTable = FALSE,
+  pvalueTableColumns = c("pvalue", "p.adjust"),
+  ESgeom = "line"
+)
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object or data structure
-containing GSEA results from fgsea analysis. The object must contain:
-\itemize{
-\item GSEA result data that can be processed by the internal
-\code{.extractDF} function with type "gseaRaw"
-\item Enrichment statistics including normalized enrichment scores,
-p-values, and gene set information
-}}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results that can be processed by the internal \code{.extractDF()} function
+with \code{type = "gseaRaw"}.}
 
-\item{showCategory}{Either a numeric value specifying the number of
-top-ranked gene sets to display (based on statistical significance), or a
-character vector specifying the exact names of gene sets to visualize. When
-numeric, the function selects the first N gene sets from the results.
-Default is \code{10}.}
+\item{showCategory}{Numeric or character. The number of top-ranked gene sets
+to visualize, or specific pathway names to plot. Default is \code{5}.}
+
+\item{title}{Character. Optional plot title displayed above the enrichment
+score curve. Default is an empty string (\code{""}).}
+
+\item{colorPalette}{Character vector. Custom color palette for pathways.
+If \code{NULL}, the default \pkg{viridisLite} palette ("D") is used.
+Default is \code{NULL}.}
+
+\item{fontSize}{Numeric. Base font size for plot text. Default is \code{10}.}
+
+\item{relHeights}{Numeric vector. Relative heights for the main enrichment
+score plot, gene tick mark panel, and ranked metric plot.
+Default is \code{c(1.5, 0.5, 1)}.}
+
+\item{subPlots}{Integer vector. Specifies which subplot(s) to display:
+\code{1} = running score, \code{2} = gene ticks, \code{3} = ranked list.
+Default is \code{1:3}.}
+
+\item{pvalueTable}{Logical. Whether to include a p-value summary table in the
+enrichment plot. Default is \code{FALSE}.}
+
+\item{pvalueTableColumns}{Character vector specifying the statistical
+columns (e.g., \code{"pvalue"}, \code{"p.adjust"}) to include in the table.
+Default is \code{c("pvalue", "p.adjust")}.}
+
+\item{ESgeom}{Character. Type of geometry for drawing the enrichment score
+curve. Must be one of \code{"line"} or \code{"dot"}. Default is
+\code{"line"}.}
 }
 \value{
-A ggplot2 object containing the GSEA plot visualization showing the
-running enrichment score curves, gene positions along the ranked gene list,
-and statistical information for the selected gene sets. The plot provides a
-comprehensive view of how genes within each pathway contribute to the
-enrichment signal.
+A single \code{ggplot2} object if one subplot is selected, or a
+combined \code{aplot::gglist} object when multiple subplots are rendered.
 }
 \description{
-The \code{gseaPlot} function creates a GSEA (Gene Set Enrichment
-Analysis) plot visualization from GSEA results data. This function serves as
-a wrapper around \code{enrichplot::gseaplot2} to simplify the process of
-generating enrichment score plots. The plot displays the running enrichment
-score, gene positions, and statistical information for selected gene sets,
-providing a comprehensive view of how genes within a pathway contribute to
-the enrichment signal.
+The \code{gseaPlot} function generates a publication-quality
+visualization of Gene Set Enrichment Analysis (GSEA) results from a
+\code{SummarizedExperiment} object. It wraps and extends
+\code{enrichplot::gseaplot2()} with additional control over layout,
+color palette, font size, subplot arrangement, and significance table
+display options.
+}
+\details{
+This function produces a comprehensive visualization combining the
+running enrichment score, gene positions, and ranked list metrics in a
+unified layout. It improves upon \code{enrichplot::gseaplot2()} by
+introducing:
+\itemize{
+\item Customizable subplot arrangement (\code{subPlots})
+\item Optional significance table overlay (\code{pvalueTable = TRUE})
+\item Adjustable color palettes via \code{colorPalette}
+\item Flexible layout scaling using \code{relHeights}
+\item Support for multiple gene sets or a single enriched term
+}
+}
+\note{
+Requires \pkg{ggplot2} (>= 3.5.0) for proper support of
+\code{legend.position = "inside"} positioning.
 }
 \examples{
-data("demo_GSE181574")
-gseaPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+gseaPlot(seDataFgsea = sig2Fun_result)
+
 }

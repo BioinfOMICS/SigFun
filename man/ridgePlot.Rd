@@ -4,48 +4,81 @@
 \alias{ridgePlot}
 \title{ridgePlot}
 \usage{
-ridgePlot(SE_data.fgsea, showCategory = 10, breaklineN = 30)
+ridgePlot(
+  seDataFgsea,
+  showCategory = 10,
+  breaklineN = 30,
+  fill = "p.adjust",
+  fontSize = 10,
+  decreasing = TRUE
+)
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results in its metadata. The object must contain:
-\itemize{
-\item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object
-compatible with enrichplot functions, containing pathway
-information, gene sets, and enrichment statistics
-}}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results, typically extracted using \code{.extractDF(type = "gseaRaw")}.
+The metadata must include enrichment statistics and ranked gene lists.}
 
-\item{showCategory}{An integer specifying the number of top-ranked gene sets
-to display in the ridge plot. Gene sets are typically ordered by statistical
-significance (p-value or adjusted p-value) or enrichment score.
+\item{showCategory}{Numeric or character. Specifies the number of top
+pathways to display or a vector of specific pathway names to include.
 Default is \code{10}.}
 
-\item{breaklineN}{An integer specifying the number of characters after which
-to break pathway names into multiple lines for better readability on the
-y-axis. Default is \code{30}.}
+\item{breaklineN}{Integer. Maximum number of characters before inserting a
+line break in pathway names for readability. Default is \code{30}.}
+
+\item{fill}{Character. Variable used for ridge fill color encoding. Must be
+one of \code{"pvalue"}, \code{"p.adjust"}, or \code{"qvalue"}.
+Default is \code{"p.adjust"}.}
+
+\item{fontSize}{Numeric. Base font size for axis text and titles.
+Default is \code{10}.}
+
+\item{decreasing}{Logical. Controls the ordering of pathways along the y-axis
+based on the median ranking metric. If \code{TRUE}, sorts in descending
+order. Default is \code{TRUE}.}
 }
 \value{
-A list containing two elements:
+A named list with two components:
 \describe{
-\item{\code{ridgePlot}}{A ggplot2 object containing the ridge plot
-visualization with formatted pathway labels}
-\item{\code{Table_ridgePlot}}{A tibble/data.frame containing the plot
-data with columns: \code{original_name} (original pathway names),
-\code{label_name} (formatted pathway names with line breaks),
-\code{p.adjust} (adjusted p-values), and \code{value} (enrichment
-values used for ridge distribution)}
+\item{\code{ridgePlot}}{A \code{ggplot2} object displaying ridge density
+curves of gene ranking metrics per pathway.}
+\item{\code{tableRidgePlot}}{A \code{data.frame} summarizing data used in
+the plot, including:
+\itemize{
+\item \code{original_name}: Original pathway name
+\item \code{label_name}: Formatted pathway name with line breaks
+\item \code{raw_fill}: Raw significance value (from the \code{fill} column)
+\item \code{neg_log10_fill}: -log10 transformed significance
+\item \code{ranking_metric}: Gene-level ranking values
+\item \code{median_ranking_metric}: Median ranking value per pathway (calculated per group)
+}}
 }
 }
 \description{
-The \code{ridgePlot} function creates a ridge plot visualization
-for Gene Set Enrichment Analysis (GSEA) results. Ridge plots display the
-distribution of gene expression values for each gene set as overlapping
-density curves, providing an intuitive way to visualize and compare the
-enrichment patterns across multiple pathways. Each ridge represents a gene
-set, with the curve shape indicating the distribution of genes within that
-pathway along the ranked gene list.
+The \code{ridgePlot} function generates a ridge density
+visualization for Gene Set Enrichment Analysis (GSEA) results stored in a
+\code{SummarizedExperiment} object. Each ridge represents the distribution
+of ranking metrics for genes within a pathway, allowing intuitive
+comparison of enrichment signal patterns across multiple gene sets.
+}
+\details{
+This function provides a ridge plot visualization inspired by
+\pkg{enrichplot::ridgeplot()}, allowing flexible customization and unified
+color encoding.
+
+The fill color of each ridge corresponds to -log10(significance) of the
+specified \code{fill} variable. Pathways are ordered by the median of their
+gene-level ranking metrics, and each curve represents the density of ranked
+genes for a given pathway.
+
+Visual encoding:
+\itemize{
+\item \strong{X-axis:} Gene ranking metric
+\item \strong{Y-axis:} Pathway names (auto-wrapped by \code{breaklineN})
+\item \strong{Fill color:} -log10(p-value or adjusted value)
+\item \strong{Ridge shape:} Distribution of enrichment scores per gene set
+}
 }
 \examples{
-data("demo_GSE181574")
-ridgePlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+ridgePlot(seDataFgsea = sig2Fun_result)s
 }

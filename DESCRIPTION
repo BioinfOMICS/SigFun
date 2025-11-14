@@ -22,11 +22,15 @@ LazyData: FALSE
 biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG, GeneSetEnrichment
 Depends:
     R (>= 4.4.0)
-Imports: BiocManager, enrichplot, clusterProfiler, pandoc, S4Vectors, dplyr, ggplot2, ggpubr, tibble, tidyr, scales, stringr, DOSE, GseaVis, circlize, cli, enrichplot (>= 1.26.6), forcats, igraph, randomcoloR, yulab.utils
-Suggests: DT, devtools, roxygen2, SummarizedExperiment, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
+Imports: clusterProfiler, S4Vectors, dplyr, ggplot2, ggpubr, tibble, tidyr, 
+         scales, stringr, DOSE, GseaVis, circlize, cli, enrichplot (>= 1.26.6), 
+         forcats, igraph, randomcoloR, yulab.utils, BiocGenerics, ggtangle, 
+         SummarizedExperiment, cowplot, data.table, fgsea, methods, rlang, 
+         magrittr
+Suggests: DT, devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
 Additional_repositories: https://bioconductor.org/packages/release/bioc
 VignetteBuilder: knitr
-Enhances: 
+Enhances: BiocManager, pandoc
 Config/Needs/website: usethis, servr
 Config/potools/style: explicit
 Config/testthat/edition: 3
@@ -34,20 +38,19 @@ Config/testthat/parallel: true
 BuildVignettes: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Collate: 
     'barPlot.R'
     'check.R'
     'chordPlot.R'
     'cnetPlot.R'
-    'demo_GSE181574.R'
+    'data.R'
     'dotPlot.R'
     'emapPlot.R'
     'globals.R'
     'gseaPlot.R'
     'heatPlot.R'
     'lollipopPlot.R'
-    'pathway_all.R'
     'plot_heat.R'
     'ridgePlot.R'
     'sigCor.R'
@@ -55,6 +58,6 @@ Collate:
     'sig2Fun.R'
     'sigFun.R'
     'treePlot.R'
-    'upsetplot.R'
+    'upsetPlot.R'
     'utils-plot.R'
     'utils-se.R'

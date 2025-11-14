@@ -4,19 +4,16 @@
 \alias{chordPlot}
 \title{chordPlot}
 \usage{
-chordPlot(SE_data.fgsea, showCategory = 5, breaklineN = 30, fontSize = 0.5)
+chordPlot(seDataFgsea, showCategory = 3, breaklineN = 30, fontSize = 0.5)
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results in its metadata. The object must contain:
-\itemize{
-\item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object with
-pathway information, gene sets, and enrichment statistics
-}}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results and pairwise pathway similarity information, typically extracted
+using \code{.extractDF(type = "gseaReadable")}.}
 
-\item{showCategory}{Either a numeric value specifying the number of top
-pathways to display, or a character vector of specific pathway names to
-include in the visualization. Default is \code{5}.}
+\item{showCategory}{Numeric or character. The number of top pathways to
+display, or a vector of specific pathway names to include. Default is
+\code{3}.}
 
 \item{breaklineN}{An integer specifying the maximum number of characters per
 line before inserting a line break in pathway names for better readability.
@@ -27,13 +24,13 @@ the chord plot. Values closer to 1 result in larger text. Default is
 \code{0.5}.}
 }
 \value{
-A list containing two elements:
+A named list containing two elements:
 \describe{
 \item{\code{chordPlot}}{A chord diagram visualization object showing
 gene-pathway relationships from the GSEA results. Genes and
 pathways are represented as nodes around a circle, connected
 by arcs that represent their associations}
-\item{\code{Table_chordPlot}}{A data.frame containing the chord plot
+\item{\code{tableChordPlot}}{A data.frame containing the chord plot
 data with columns: \code{original_name} (original pathway IDs),
 \code{label_name} (formatted pathway names with line breaks),
 and \code{Gene} (genes associated with each pathway, concatenated
@@ -48,7 +45,22 @@ chord plot provides an intuitive way to visualize gene-pathway associations,
 where genes and pathways are represented as nodes around a circle, connected
 by arcs that represent their relationships.
 }
+\details{
+This function internally calls the helper function \code{.chrod()}
+(stored in \code{utils-plot.R}), which uses the \pkg{circlize} package
+to create a publication-quality chord diagram. Pathway names are displayed
+on the inner side of the circle, while gene names are positioned along the
+outer circle, improving readability and visual balance.
+
+The color palette is automatically generated using
+\code{viridisLite::viridis()} to ensure a perceptually uniform and
+color-blind–friendly representation.
+}
+\note{
+Requires \pkg{circlize} (>= 0.4.15) for chord diagram generation.
+}
 \examples{
-data("demo_GSE181574")
-chordPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+chordPlot(seDataFgsea = sig2Fun_result)
+
 }

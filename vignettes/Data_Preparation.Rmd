@@ -1,0 +1,295 @@
+---
+title: "Data Preparation"
+package: SigFun
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Data Preparation}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r style, echo=FALSE, results='asis'}
+BiocStyle::markdown(css.files = c('custom.css'))
+knitr::opts_chunk$set(collapse=TRUE, comment="#>")
+```
+
+# Overview
+
+SigFun requires a standardized **SummarizedExperiment (SE)** as input.
+Both the streamlined workflow (`sig2Fun()`) and the stepwise workflow
+(`sigCor()` → GSEA → visualization) use the **same SE format**.
+
+This vignette provides:
+
+-   A quick validation checklist
+
+-   Required column structure for each SE component
+
+-   Small example snippets to confirm your data matches expectations
+
+# Quick Validation Checklist
+
+-   **Expression (`assays$abundance`)**:
+
+    -   Numeric matrix **genes × samples**
+
+    -   No columns or rows should contain all values of `NA`; zeros
+        allowed
+
+    -   Preprocessed values (e.g., log‑TPM/CPM).
+
+-   **RowData (`rowData`)**
+
+    -   Must contain:
+
+        -   `ensg_id`
+
+        -   `gene_symbol`
+
+        -   `gene_biotype`
+
+    -   Gene order must align with the assay rows
+
+    -   `rownames(rowData)` must equal `ensg_id`
+
+-   **ColData (`colData`)**:
+
+    -   Row order must match assay columns
+
+    -   Required:
+
+        -   `sample_id` matching column names of expression
+
+        -   ≥1 **signature column** (numeric or 0/1)
+
+    -   Optional: any additional covariates
+
+-   **Ontology (`t2g`)** (See [Ontology Database Setup] for setup)
+
+    -   A data.frame with:
+
+        -   `gs_name`
+
+        -   `ensembl_gene`
+
+    -   Gene ID type must match `rowData$ensg_id`
+
+# Load Packages
+
+```{r load_package, message=FALSE}
+library(SigFun)
+library(dplyr)
+```
+
+# Required SummarizedExperiment Structure
+
+SigFun expects an SE with three core components:
+
+-   **Assay**: expression matrix (genes × samples), stored as
+    `assays$abundance`
+
+-   **RowData**: gene annotations aligned with assay rows
+
+-   **ColData**: sample metadata aligned with assay columns
+
+## Expression Assay
+
+**Requirements**
+
+-   Numeric matrix with genes as rows and samples as columns
+
+-   No all-NA rows/columns
+
+-   Normalized values recommended (e.g., log-TPM/CPM)
+
+**Example**
+
+```{r example_expression_data_format, warning = FALSE}
+# Expression data
+data("expr.data")
+dim(expr.data)
+expr.data %>% DT::datatable(options = list(pageLength = 10, scrollX = TRUE))
+```
+
+## RowData: Gene Annotations
+
+**Required columns**
+
+-   `ensg_id` — Ensembl Gene ID (`ENSG...`)
+-   `gene_symbol` — HGNC gene symbol (e.g., TP53)
+-   `gene_biotype` — e.g., `protein_coding`, `lncRNA`
+
+**Alignment Rules**
+
+-   Must be in the **same row order** as `expr.data`
+
+-   `rownames(rowData)` must equal `ensg_id`
+
+**Example**
+
+```{r example_rowData_format, warning=FALSE}
+# Gene annotations
+data("mapping")
+# ensure rownames
+rownames(mapping) <- mapping$ensg_id
+mapping %>% DT::datatable(options = list(pageLength = 10, scrollX = TRUE))
+```
+
+## ColData: Sample Information & Signatures
+
+**Required columns**
+
+-   `sample_id` matching expression column names
+
+-   ≥1 **signature** column — name freely chosen (e.g., `my_signature`),
+    numeric or 0/1
+
+**Notes**
+
+-   Signature column does *not* have to be named `value`
+
+-   No missing values in signature columns
+
+-   Binary signatures require `cor.method = "logit"`
+
+**Example**
+
+```{r example_sample_information_format, warning=FALSE}
+# Sample metadata & signatures
+data("SIG_MAT")
+dim(SIG_MAT)
+SIG_MAT %>% DT::datatable(options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+```
+
+**Note**: If your signature column is not named `value`, that’s
+fine—SigFun reads the signature(s) from `colData` internally. Keep names
+informative (e.g., `Tcell_score`, `EMT_binary`).
+
+## (Optional) Pre‑computed gene–signature associations (`cor.df`)
+
+Advanced users may attach a custom ranking table to `metadata(SE)`:
+
+```{r cor.df, eval = FALSE}
+# Example shape: data.frame(gene = ensg_id, cor = numeric, pval = numeric, ...)
+meta <- S4Vectors::metadata(your_SE)
+meta$cor.df <- your_precomputed_cordf
+S4Vectors::metadata(your_SE) <- meta
+```
+
+# Building Your SummarizedExperiment
+
+## From your data (template)
+
+```{r build_your_input_data, eval=FALSE}
+# Step 1: Prepare your matrices/data frames
+expr_matrix <- as.matrix(your_expression_data) # genes × samples
+gene_info <- your_gene_annotations # contains ensg_id, gene_symbol, gene_biotype
+sample_info <- your_sample_metadata_with_signatures
+
+# Step 2: Align & validate
+stopifnot(
+  is.numeric(expr_matrix[1,1]),
+  is.matrix(expr_matrix),  # Ensure it's actually a matrix
+  nrow(expr_matrix) == nrow(gene_info),
+  ncol(expr_matrix) == nrow(sample_info),  # Check column count matches samples
+  # Column names of expression must match a sample_id column
+  all(colnames(expr_matrix) == sample_info$sample_id),
+  # Row names should match gene identifiers
+  all(rownames(expr_matrix) == gene_info$gene_id),  # or whichever ID column
+  # No rows should be entirely NA
+  !any(rowSums(is.na(expr_matrix)) == ncol(expr_matrix)),
+  # No columns should be entirely NA
+  !any(colSums(is.na(expr_matrix)) == nrow(expr_matrix))
+)
+
+
+# Ensure row names for rowData are Ensembl IDs
+gene_info <- as.data.frame(gene_info)
+rownames(gene_info) <- gene_info$ensg_id
+
+
+# Step 3: Construct SE
+your_SE <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(abundance = expr_matrix),
+  rowData = S4Vectors::DataFrame(gene_info),
+  colData = S4Vectors::DataFrame(sample_info)
+)
+
+
+# Step 4: Inspect
+your_SE
+```
+
+## From bundled demo data (runnable)
+
+```{r build_input_from_demo}
+SE_demo <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(abundance = as.matrix(expr.data)),
+  rowData = S4Vectors::DataFrame(mapping, row.names = mapping$ensg_id),
+  colData = S4Vectors::DataFrame(SIG_MAT)
+)
+SE_demo
+```
+
+**Sanity checks (optional but recommended)**
+
+```{r sanity_checks}
+stopifnot(
+  is.matrix(SummarizedExperiment::assay(SE_demo, "abundance")),
+  is.numeric(SummarizedExperiment::assay(SE_demo, "abundance")),
+  # No rows should be entirely NA
+  all(rowSums(is.na(SummarizedExperiment::assay(SE_demo, "abundance"))) < ncol(SummarizedExperiment::assay(SE_demo, "abundance"))),
+  # No columns should be entirely NA
+  all(colSums(is.na(SummarizedExperiment::assay(SE_demo, "abundance"))) < nrow(SummarizedExperiment::assay(SE_demo, "abundance"))),
+  # Row names must match ensg_id column
+  all(rownames(SummarizedExperiment::rowData(SE_demo)) == SummarizedExperiment::rowData(SE_demo)$ensg_id),
+  # Column names must match sample identifiers in colData
+  all(colnames(SummarizedExperiment::assay(SE_demo, "abundance")) == rownames(SummarizedExperiment::colData(SE_demo))),
+  # Dimensions must match
+  nrow(SummarizedExperiment::assay(SE_demo, "abundance")) == nrow(SummarizedExperiment::rowData(SE_demo)),
+  ncol(SummarizedExperiment::assay(SE_demo, "abundance")) == nrow(SummarizedExperiment::colData(SE_demo))
+)
+```
+
+# Appendices
+
+## Ontology Database Setup
+
+```{r t2g_prepare, warning=FALSE, eval=FALSE}
+# Prepare gene ontology data. We strongly recommend MsigDB.
+# The following code can help you to 
+if (!require(msigdbr, quietly = TRUE)) {
+    install.packages("msigdbr")
+    library(msigdbr)
+}
+# Download human HALLMARKER ontology information
+H_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "H") %>% 
+    dplyr::select(gs_name, ensembl_gene)
+
+# Download human C2 pathway information
+C2_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C2") %>% 
+    dplyr::filter(gs_subcat %in% c("CP:BIOCARTA","CP:KEGG_MEDICUS",
+        "CP:REACTOME","CP:WIKIPATHWAYS")) %>% 
+    dplyr::select(gs_name, ensembl_gene)
+# Download human C5 ontology information
+C5_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C5") %>% 
+    dplyr::filter(gs_subcat %in% c("GO:BP","GO:CC","GO:MF")) %>% 
+    dplyr::select(gs_name, ensembl_gene)
+
+# Combine them
+t2g <- rbind(H_t2g, C2_t2g, C5_t2g)
+```
+
+## Session Information
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```

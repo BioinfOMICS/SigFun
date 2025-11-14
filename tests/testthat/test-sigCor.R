@@ -3,89 +3,6 @@ library(SummarizedExperiment)
 library(dplyr)
 library(tidyr)
 
-# Helper functions (provided by user)
-.z_score_cal <- function(x) {
-    (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
-}
-
-.corList <- function(signature, genes, method) {
-    cor_results <- apply(genes, 2, function(x) {
-        cor_test <- cor.test(signature, x, method = method)
-        list(cor = cor_test$estimate, pval = cor_test$p.value)
-    })
-    cor_matrix <- data.frame(
-        cor = sapply(cor_results, function(x) x$cor),
-        pval = sapply(cor_results, function(x) x$pval)
-    )
-    rownames(cor_matrix) <- colnames(genes)
-    return(cor_matrix)
-}
-
-.logitList <- function(y, genes, method) {
-    logit_results <- apply(genes, 2, function(x) {
-        tryCatch({
-            model <- glm(y ~ x, family = binomial())
-            coef_summary <- summary(model)$coefficients
-            list(cor = coef_summary[2, 1], pval = coef_summary[2, 4])
-        }, error = function(e) {
-            list(cor = NA, pval = NA)
-        })
-    })
-    logit_matrix <- data.frame(
-        cor = sapply(logit_results, function(x) x$cor),
-        pval = sapply(logit_results, function(x) x$pval)
-    )
-    rownames(logit_matrix) <- colnames(genes)
-    return(logit_matrix)
-}
-
-#Main function
-sigCor <- function(SE_data, cor.method="spearman", Z.transform=FALSE) {
-    signature.obj <- as.data.frame(SummarizedExperiment::colData(SE_data))
-
-    exp_data <- as.data.frame(SummarizedExperiment::assay(SE_data))
-    exp_data$ensg_id <- rownames(exp_data)
-    exp_data <- exp_data %>% tidyr::gather(-ensg_id, key="sample_id",
-                                           value="value")
-    S_ID <- intersect(signature.obj$sample_id, unique(exp_data$sample_id))
-    exp_data.sid <- exp_data %>% dplyr::filter(sample_id %in% S_ID)
-    signature.obj <- signature.obj %>% dplyr::filter(sample_id %in% S_ID)
-    exp_data.FPKM_UQ.tmp <- exp_data.sid %>%
-        dplyr::select(sample_id, ensg=ensg_id, value)
-    tmp.data.wide <- exp_data.FPKM_UQ.tmp %>% dplyr::filter(ensg != "") %>%
-        dplyr::select(sample_id, ensg, value) %>%
-        dplyr::distinct(sample_id, ensg, .keep_all=TRUE) %>%
-        tidyr::pivot_wider(names_from=ensg, values_from=value)
-
-    cor.object <- merge(signature.obj, tmp.data.wide)
-    pattern.signature <- cor.object$value
-    pattern.genes <- cor.object %>% dplyr::select(-sample_id, -value)
-    count.EffectSamples <- unlist(lapply(pattern.genes,
-                                         function(x) length(unique(x))))
-    rm.index <- which(count.EffectSamples < 2)
-
-    if (Z.transform == TRUE) {
-        pattern.genes.norm <- if (length(rm.index) > 0) {
-            apply(pattern.genes[, -rm.index], 2, .z_score_cal)
-        } else { apply(pattern.genes, 2, .z_score_cal) }
-    } else { pattern.genes.norm <- if (length(rm.index) > 0)
-    {pattern.genes[, -rm.index]} else {pattern.genes} }
-
-    if(cor.method %in% c("pearson", "kendall", "spearman")){
-        cor.list <- .corList(pattern.signature, pattern.genes.norm, cor.method)
-    }
-
-    if(cor.method %in% c("logit")){
-        cor.list <- .logitList(y=pattern.signature, pattern.genes.norm, cor.method)
-    }
-
-    cor.df <- data.frame(gene=rownames(cor.list), cor=as.numeric(cor.list$cor) ,
-                         pval=as.numeric(cor.list$pval))
-    S4Vectors::metadata(SE_data) <- list(cor.df=cor.df)
-    return(SE_data)
-}
-
-
 # Helper function to create test data
 create_test_se <- function(n_genes = 5, n_samples = 10, add_signature = TRUE) {
     # Create gene expression matrix
@@ -122,13 +39,13 @@ create_test_se <- function(n_genes = 5, n_samples = 10, add_signature = TRUE) {
 # Unit Tests
 test_that("sigCor returns SummarizedExperiment object", {
     se_test <- create_test_se()
-    result <- sigCor(se_test)
+    result <- sigCor(seData = se_test)
     expect_s4_class(result, "SummarizedExperiment")
 })
 
 test_that("sigCor adds correlation results to metadata", {
     se_test <- create_test_se()
-    result <- sigCor(se_test)
+    result <- sigCor(seData = se_test)
 
     expect_true("cor.df" %in% names(S4Vectors::metadata(result)))
     cor_df <- S4Vectors::metadata(result)$cor.df
@@ -140,15 +57,15 @@ test_that("sigCor works with different correlation methods", {
     se_test <- create_test_se()
 
     # Test spearman (default)
-    result_spearman <- sigCor(se_test, cor.method = "spearman")
+    result_spearman <- sigCor(seData = se_test, corMethod = "spearman")
     expect_true("cor.df" %in% names(S4Vectors::metadata(result_spearman)))
 
     # Test pearson
-    result_pearson <- sigCor(se_test, cor.method = "pearson")
+    result_pearson <- sigCor(seData = se_test, corMethod = "pearson")
     expect_true("cor.df" %in% names(S4Vectors::metadata(result_pearson)))
 
     # Test kendall
-    result_kendall <- sigCor(se_test, cor.method = "kendall")
+    result_kendall <- sigCor(seData = se_test, corMethod = "kendall")
     expect_true("cor.df" %in% names(S4Vectors::metadata(result_kendall)))
 })
 
@@ -157,7 +74,7 @@ test_that("sigCor works with logistic regression method", {
     # Create binary signature for logistic regression
     colData(se_test)$value <- sample(c(0, 1), ncol(se_test), replace = TRUE)
 
-    result_logit <- sigCor(se_test, cor.method = "logit")
+    result_logit <- sigCor(seData = se_test, corMethod = "logit")
     expect_true("cor.df" %in% names(S4Vectors::metadata(result_logit)))
 
     cor_df <- S4Vectors::metadata(result_logit)$cor.df
@@ -182,8 +99,8 @@ test_that("sigCor works with Z-transformation", {
     # Create continuous signature values without ties
     colData(se_test)$value <- runif(20, min = 1, max = 10)
 
-    result_no_z <- sigCor(se_test, Z.transform = FALSE)
-    result_with_z <- sigCor(se_test, Z.transform = TRUE)
+    result_no_z <- sigCor(seData = se_test, zTransform = FALSE)
+    result_with_z <- sigCor(seData = se_test, zTransform = TRUE)
 
     cor_df_no_z <- S4Vectors::metadata(result_no_z)$cor.df
     cor_df_with_z <- S4Vectors::metadata(result_with_z)$cor.df
@@ -245,7 +162,7 @@ test_that("sigCor handles sample mismatch between assay and colData", {
     # Modify colData to have different samples
     colData(se_mismatch)$sample_id[6:10] <- paste0("Different", seq_len(5))
 
-    result <- sigCor(se_mismatch)
+    result <- sigCor(seData = se_mismatch)
     cor_df <- S4Vectors::metadata(result)$cor.df
 
     expect_s3_class(cor_df, "data.frame")
@@ -259,7 +176,7 @@ test_that("sigCor handles missing samples correctly", {
     # Keep only first 8 samples in both assay and colData
     se_subset <- se_test[, seq_len(8)]
 
-    result <- sigCor(se_subset)
+    result <- sigCor(seData = se_subset)
     cor_df <- S4Vectors::metadata(result)$cor.df
 
     expect_s3_class(cor_df, "data.frame")
@@ -273,7 +190,7 @@ test_that("sigCor handles genes with insufficient variation", {
     # Make one gene have constant values (no variation)
     assay(se_test)[1, ] <- 5
 
-    result <- sigCor(se_test)
+    result <- sigCor(seData = se_test)
     cor_df <- S4Vectors::metadata(result)$cor.df
 
     # Should still work but exclude constant genes
@@ -283,7 +200,7 @@ test_that("sigCor handles genes with insufficient variation", {
 
 test_that("sigCor correlation results have correct structure", {
     se_test <- create_test_se(n_genes = 5, n_samples = 20)
-    result <- sigCor(se_test)
+    result <- sigCor(seData = se_test)
     cor_df <- S4Vectors::metadata(result)$cor.df
 
     # Check structure
@@ -307,12 +224,12 @@ test_that("sigCor correlation results have correct structure", {
 test_that("sigCor handles edge cases", {
     # Test with minimum data
     se_small <- create_test_se(n_genes = 2, n_samples = 3)
-    result_small <- sigCor(se_small)
+    result_small <- sigCor(seData = se_small)
     expect_s4_class(result_small, "SummarizedExperiment")
 
     # Test with larger dataset
     se_large <- create_test_se(n_genes = 20, n_samples = 50)
-    result_large <- sigCor(se_large)
+    result_large <- sigCor(seData = se_large)
     expect_s4_class(result_large, "SummarizedExperiment")
     expect_equal(
         nrow(S4Vectors::metadata(result_large)$cor.df),
@@ -325,7 +242,7 @@ test_that("sigCor preserves original data structure", {
     original_assay <- assay(se_test)
     original_coldata <- colData(se_test)
 
-    result <- sigCor(se_test)
+    result <- sigCor(seData = se_test)
 
     # Original data should be preserved
     expect_identical(assay(result), original_assay)
@@ -333,6 +250,6 @@ test_that("sigCor preserves original data structure", {
     expect_identical(colData(result)$value, original_coldata$value)
 })
 
-# Run tests (remove the problematic test_file() call)
+# Run tests
 cat("All sigCor unit tests have been defined and are ready to run.\n")
-cat("Use testthat::test_file('path/to/this/file.R') to execute the tests.\n")
+cat("Use testthat::test_file('tests/testthat/test-sigCor.R') to execute the tests.\n")

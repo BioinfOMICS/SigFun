@@ -5,57 +5,121 @@
 \title{treePlot}
 \usage{
 treePlot(
-  SE_data.fgsea,
+  seDataFgsea,
   showCategory = 10,
-  color = "pvalue",
-  hclustfun = "ward.D"
+  dotColor = "pvalue",
+  hclustfun = "ward.D",
+  labelFormat = NULL,
+  labelFormatTiplab = NULL,
+  cexCategory = 1,
+  leafFontSize = 3,
+  cladeFontSize = 2.5,
+  hilightParams = list(hilight = TRUE, align = "both"),
+  offsetParams = list(barTree = rel(1.3), tiplab = rel(1.5), extend = 0.3, hexpand = 0.1),
+  clusterParams = list(method = "ward.D", n = 5, color = NULL, labelWordsN = 0,
+    labelFormat = 30)
 )
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results in its metadata. The object must contain:
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results in its metadata. The object must include:
 \itemize{
-\item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object with
-pathway information, gene sets, and enrichment statistics
+\item \code{metadata(seDataFgsea)$gseaResult}: GSEA result object with
+pathway information, enrichment statistics, and core enrichment genes.
 }}
 
-\item{showCategory}{An integer specifying the number of top pathways to
-display in the tree plot. The pathways are typically ranked by significance
-or enrichment score. Default is \code{10}.}
+\item{showCategory}{Integer or character. Specifies the number of top
+pathways to display, or a vector of pathway IDs/names to include.
+Must include at least 5 pathways. Default is \code{10}.}
 
-\item{color}{A character string specifying which column from the GSEA results
-to use for color mapping. Common options include \code{'pvalue'},
-\code{'p.adjust'}, \code{'qvalue'}, or \code{'NES'} (Normalized Enrichment
-Score). Default is \code{'pvalue'}.}
+\item{dotColor}{Character. Column name in the GSEA results used to map color.
+Options: \code{'pvalue'}, \code{'p.adjust'}, \code{'qvalue'}, or \code{'NES'}.
+Default is \code{'pvalue'}.}
 
-\item{hclustfun}{A character string specifying the hierarchical clustering
-method to use for grouping pathways. Options include \code{'ward.D'},
-\code{'ward.D2'}, \code{'single'}, \code{'complete'}, \code{'average'},
-\code{'mcquitty'}, \code{'median'}, or \code{'centroid'}.
-Default is \code{'ward.D'}.}
+\item{hclustfun}{Character. Hierarchical clustering method used to group
+pathways. Options include \code{'ward.D'}, \code{'ward.D2'},
+\code{'single'}, \code{'complete'}, \code{'average'}, \code{'mcquitty'},
+\code{'median'}, or \code{'centroid'}. Default is \code{'ward.D'}.}
+
+\item{labelFormat}{Optional. Numeric or function controlling text wrapping
+or formatting for clade labels.}
+
+\item{labelFormatTiplab}{Optional. Numeric or function controlling text
+formatting for terminal node (tip) labels.}
+
+\item{cexCategory}{Numeric. Scaling factor for node size and label spacing.
+Default is \code{1}.}
+
+\item{leafFontSize}{Numeric. Font size for terminal node labels.
+Default is \code{3}.}
+
+\item{cladeFontSize}{Numeric. Font size for clade (internal node) labels.
+Default is \code{2.5}.}
+
+\item{hilightParams}{List. Controls highlighting and alignment behavior for
+clades. Default is \code{list(hilight = TRUE, align = "both")}.
+\itemize{
+\item \code{hilight}: Whether to shade cluster regions.
+\item \code{align}: Text alignment mode for cluster labels.
+}}
+
+\item{offsetParams}{List. Controls tree and label positioning parameters.
+Default is \code{list(barTree = rel(1.3), tiplab = rel(1.5),
+  extend = 0.3, hexpand = 0.1)}.
+\itemize{
+\item \code{barTree}: Horizontal spacing between tree branches and text.
+\item \code{tiplab}: Distance between tips and labels.
+\item \code{extend}: Extension of the tree layout for clarity.
+\item \code{hexpand}: Expansion ratio applied to x-axis layout.
+}}
+
+\item{clusterParams}{List. Parameters for hierarchical clustering and labeling.
+Default is \code{list(method = "ward.D", n = 5, color = NULL,
+  labelWordsN = 0, labelFormat = 30)}.
+\itemize{
+\item \code{method}: Clustering algorithm.
+\item \code{n}: Number of clusters to divide the tree into.
+\item \code{color}: Optional vector for custom cluster colors.
+\item \code{labelWordsN}: Maximum number of words shown in clade labels.
+\item \code{labelFormat}: Text wrapping width for clade labels.
+}}
 }
 \value{
 A list containing two elements:
 \describe{
-\item{\code{treePlot}}{A ggplot2 object containing the hierarchical
-tree plot visualization showing pathway clustering with
-color-coded significance values}
-\item{\code{Table_treePlot}}{A tibble/data.frame containing the plot
-data for terminal nodes (pathways) with columns: \code{label_name}
-(pathway names), the specified color column (e.g., \code{pvalue},
-\code{p.adjust}, or \code{NES}), and \code{count} (number of genes
-in each pathway)}
+\item{\code{treePlot}}{A \code{ggtree} object displaying the hierarchical
+clustering of pathways with color-coded enrichment metrics and cluster
+highlights.}
+\item{\code{tableTreePlot}}{A \code{data.frame} containing pathway-level
+data for terminal nodes, including label names, selected color variable
+(e.g., \code{pvalue}, \code{p.adjust}, or \code{NES}), and gene counts.}
 }
 }
 \description{
 The \code{treePlot} function creates a hierarchical tree plot
 to visualize gene set enrichment analysis (GSEA) results. The tree plot
-groups similar pathways together based on their gene overlap and displays
-them in a dendrogram structure, providing an intuitive way to understand
-pathway relationships and identify functional clusters. The plot uses color
-coding to represent statistical significance or other enrichment metrics.
+groups similar pathways together based on gene overlap and displays them
+as a dendrogram, providing an intuitive way to explore functional clusters
+and pathway relationships. Color and size mappings represent enrichment
+significance and gene counts, respectively.
+}
+\details{
+The \code{treePlot} function organizes enriched pathways into functional
+clusters based on term similarity (gene overlap) and visualizes them using
+a dendrogram structure. Users can customize appearance through nested
+parameter lists (\code{hilightParams}, \code{offsetParams},
+\code{clusterParams}) to fine-tune alignment, spacing, and label style.
+
+Internal hierarchical clustering is computed via \code{stats::hclust},
+and visualization is rendered using \code{ggtree}. Terminal nodes (tips)
+correspond to enriched pathways, with color intensity representing
+enrichment significance and point size corresponding to the number of
+core genes per pathway.
 }
 \examples{
-data("demo_GSE181574")
-treePlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+treePlot(seDataFgsea = sig2Fun_result,
+          showCategory = 10,
+          dotColor = "pvalue",
+          hclustfun = "ward.D")
 }

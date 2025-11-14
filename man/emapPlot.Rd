@@ -4,48 +4,97 @@
 \alias{emapPlot}
 \title{emapPlot}
 \usage{
-emapPlot(SE_data.fgsea, showCategory = 10)
+emapPlot(
+  seDataFgsea,
+  showCategory = 10,
+  layout = igraph::layout_with_kk,
+  color = "p.adjust",
+  sizeCategory = 1,
+  minEdge = 0.2,
+  fontSize = 3,
+  colorEdge = "grey",
+  sizeEdge = 0.4,
+  nodeLabel = "category"
+)
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results with precomputed pairwise term similarities. The object must contain
-processed GSEA data that can be extracted using the internal helper function
-\code{.extractDF} with \code{type="gseaSim"}. This typically includes:
-\itemize{
-\item GSEA results with readable gene symbols
-\item Pairwise pathway similarity calculations
-\item Enrichment statistics and significance values
-}}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results and pairwise pathway similarity information, typically extracted
+using \code{.extractDF(type = "gseaSimilar")}.}
 
-\item{showCategory}{An integer specifying the maximum number of pathways to
-display in the enrichment map. Pathways are typically ranked by significance
-or enrichment score, and the top pathways are selected for visualization.
-Default is \code{30}.}
+\item{showCategory}{Numeric or character. The number of top pathways to
+display, or a vector of specific pathway names to include. Default is
+\code{10}.}
+
+\item{layout}{A layout function from the \pkg{igraph} package to position
+nodes in the network. Default is \code{igraph::layout_with_kk}.}
+
+\item{color}{Character. Variable used for node color encoding. Must be one of
+\code{"pvalue"}, \code{"p.adjust"}, or \code{"qvalue"}. Default is
+\code{"p.adjust"}.}
+
+\item{sizeCategory}{Numeric. Scaling factor for node sizes. Default is
+\code{1}.}
+
+\item{minEdge}{Numeric. Minimum similarity threshold for retaining edges in
+the network (range: 0–1). Default is \code{0.2}.}
+
+\item{fontSize}{Numeric. Font size of node labels. Default is \code{3}.}
+
+\item{colorEdge}{Character. Color of connecting edges between nodes. Default
+is \code{"grey"}.}
+
+\item{sizeEdge}{Numeric. Edge line width. Default is \code{0.4}.}
+
+\item{nodeLabel}{Character. Determines which nodes are labeled in the plot.
+Accepts \code{"category"}, \code{"all"}, or \code{"none"}. Default is
+\code{"category"}.}
 }
 \value{
-A list containing two elements:
+A named list with two components:
 \describe{
-\item{\code{emapPlot}}{A ggplot2 object containing the enrichment map
-visualization showing pathway networks with nodes representing
-pathways and edges representing functional similarities between
-pathways}
-\item{\code{Table_emapPlot}}{A data.frame containing the plot data
-with columns: \code{label_name} (pathway names/labels),
-\code{size} (node size values, typically representing gene count
-or significance), and \code{p.adjust} (adjusted p-values for
-statistical significance)}
+\item{\code{emapPlot}}{A \code{ggplot2} network visualization showing
+pathways (nodes) and their functional relationships (edges).}
+\item{\code{tableEmapPlot}}{A \code{data.frame} summarizing node
+attributes used in the plot, including:
+\itemize{
+\item \code{labelName}: Pathway or term label
+\item \code{size}: Node size values
+\item \code{color}: Color aesthetic value (when applicable)
+}}
 }
 }
 \description{
-The \code{emapPlot} function creates an enrichment map plot to
-visualize gene set enrichment analysis (GSEA) results. This network-based
-visualization displays pathways as nodes and connects similar pathways with
-edges, where edge thickness represents the degree of similarity between
-pathways. The enrichment map provides an intuitive overview of the
-functional landscape by clustering related biological processes and
-highlighting pathway relationships through shared genes.
+The \code{emapPlot} function generates a network-based enrichment
+map visualization for Gene Set Enrichment Analysis (GSEA) results stored in
+a \code{SummarizedExperiment} object. Each node represents a pathway or
+gene set, and edges represent pairwise similarity between pathways based on
+shared genes. This visualization provides an overview of functional
+relationships among enriched terms.
+}
+\details{
+This function provides a simplified implementation of
+\code{enrichplot::emapplot()} with a clean SigFun-style aesthetic. Nodes
+are colored by the statistical significance (e.g., \code{p.adjust}) and
+sized according to pathway gene counts.
+
+The edge structure between pathways is derived from pairwise similarity
+scores precomputed by \code{.extractDF(type = "gseaSimilar")}.
+
+Visual encoding follows the SigFun design standard:
+\itemize{
+\item \strong{Node color:} Encodes -log10(significance)
+\item \strong{Node size:} Reflects pathway or gene set size
+\item \strong{Edge thickness:} Represents similarity between pathways
+\item \strong{Labels:} Optional display controlled by \code{nodeLabel}
+}
+}
+\note{
+Requires \pkg{enrichplot} (>= 1.21.0) and \pkg{ggtangle} (>= 1.0.0)
+for consistent network visualization behavior.
 }
 \examples{
-data("demo_GSE181574")
-emapPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+emapPlot(seDataFgsea = sig2Fun_result)
+
 }

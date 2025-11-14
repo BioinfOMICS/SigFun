@@ -4,51 +4,107 @@
 \alias{lollipopPlot}
 \title{lollipopPlot}
 \usage{
-lollipopPlot(SE_data.fgsea, showCategory = 10, breaklineN = 30)
+lollipopPlot(
+  seDataFgsea,
+  showCategory = 10,
+  breaklineN = 30,
+  x = "NES",
+  alpha = "p.adjust",
+  size = "Count",
+  fontSize = 10,
+  addSeg = TRUE,
+  lineSize = 1,
+  lineType = "solid"
+)
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results in its metadata. The object must contain:
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results in its metadata.}
+
+\item{showCategory}{Numeric or character. Number of top pathways to display
+or specific pathway names to include. When numeric:
 \itemize{
-\item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object with
-pathway information, gene sets, enrichment statistics, and NES values
-}}
+\item If \code{x = "NES"}: Displays top N positively enriched and top N
+negatively enriched pathways (up to 2N total pathways)
+\item If \code{x} is \code{"Count"} or \code{"GeneRatio"}: Displays top N
+pathways sorted by the specified metric
+}
+When character: Displays only the specified pathway IDs/names.
+Default is \code{10}.}
 
-\item{showCategory}{Either an integer specifying the number of top pathways
-to display (ranked by significance), or a character vector of specific
-pathway IDs to include in the visualization. Default is \code{10}.}
+\item{breaklineN}{Integer. Maximum number of characters before wrapping
+pathway names. Default is \code{30}.}
 
-\item{breaklineN}{An integer specifying the maximum number of characters per
-line before wrapping pathway names to the next line for better readability.
-Underscores in pathway names are automatically replaced with spaces.
-Default is \code{30}.}
+\item{x}{Character. Variable for the x-axis. Must be one of \code{"NES"},
+\code{"Count"}, or \code{"GeneRatio"}. Default is \code{"NES"}.}
+
+\item{alpha}{Character. Variable for transparency encoding. Must be one of
+\code{"pvalue"}, \code{"p.adjust"}, or \code{"qvalue"}. Default is
+\code{"p.adjust"}.}
+
+\item{size}{Character. Variable for dot size. Must be one of \code{"Count"}
+or \code{"GeneRatio"}. Default is \code{"Count"}.}
+
+\item{fontSize}{Numeric. Base font size for plot text elements.
+Default is \code{10}.}
+
+\item{addSeg}{Logical. Whether to include connecting line segments between
+the y-axis and dots (the "stick" of the lollipop). When \code{FALSE},
+only dots are displayed. Default is \code{TRUE}.}
+
+\item{lineSize}{Numeric. Line thickness for the connecting segments when
+\code{addSeg = TRUE}. Default is \code{1}.}
+
+\item{lineType}{Character. Line type for the connecting segments when
+\code{addSeg = TRUE}. Options include \code{"solid"}, \code{"dashed"},
+\code{"dotted"}, etc. Default is \code{"solid"}.}
 }
 \value{
-A list containing two elements:
+A named list containing two components:
 \describe{
-\item{\code{lollipopPlot}}{A ggplot2 object containing the lollipop plot
-visualization showing pathway enrichment results with NES values,
-statistical significance, and formatted pathway names with line
-breaks}
-\item{\code{Table_lollipopPlot}}{A tibble/data.frame containing the plot
-data with columns: \code{original_name} (original pathway IDs),
-\code{Description} (formatted pathway descriptions with line
-breaks),
-\code{NES} (Normalized Enrichment Score), \code{p.adjust} (adjusted
-p-values), and \code{Count} (number of genes in each pathway)}
+\item{\code{lollipopPlot}}{A \code{ggplot2} object of the lollipop plot
+with pathways on the y-axis and enrichment metrics on the x-axis.}
+\item{\code{tableLollipopPlot}}{A \code{data.frame} containing the
+plotted data with columns:
+\itemize{
+\item \code{original_name}: Original pathway IDs
+\item \code{Description}: Formatted pathway names with line breaks
+\item X-axis variable: The column specified by the \code{x} parameter
+(\code{NES}, \code{Count}, or \code{GeneRatio})
+\item Significance column: The column specified by the \code{alpha}
+parameter (\code{pvalue}, \code{p.adjust}, or \code{qvalue})
+\item \code{neg_log_alpha}: Transformed significance value
+(-log10(alpha))
+\item Size variable: The column specified by the \code{size} parameter
+(\code{Count} or \code{GeneRatio})
+}}
 }
 }
 \description{
-The \code{lollipopPlot} function creates a lollipop plot
-(enhanced dot plot) to visualize gene set enrichment analysis (GSEA) results.
-This visualization displays pathways as horizontal bars with dots at the
-end, where the position of each dot represents the Normalized Enrichment
-Score (NES) and additional visual elements indicate statistical
-significance. The plot provides an intuitive way to compare pathway
-enrichment across multiple biological processes, with pathways ordered by
-their enrichment scores.
+The \code{lollipopPlot} function generates a lollipop-style
+visualization of Gene Set Enrichment Analysis (GSEA) results. Each
+horizontal line represents a pathway, and the dot at its end marks the
+enrichment statistic (e.g., NES or GeneRatio). Dot size and transparency
+encode statistical significance, while color indicates enrichment
+direction. The connecting line segments can be toggled on or off.
+}
+\details{
+This function creates a lollipop chart where each pathway is represented
+by a horizontal line segment (the "stick", controlled by \code{addSeg})
+ending in a dot (the "pop"). The visual encoding follows these rules:
+\itemize{
+\item \strong{X-axis position:} Enrichment metric (NES, Count, or
+GeneRatio)
+\item \strong{Dot size:} Gene count or gene ratio
+\item \strong{Dot/line color:} Enrichment direction (red for enriched,
+blue for depleted when x = "NES"; red only for other metrics)
+\item \strong{Transparency (alpha):} Statistical significance
+(-log10 transformed)
+\item \strong{Line segments:} Optional connecting lines from y-axis to
+dots, controlled by \code{addSeg}
+}
 }
 \examples{
-data("demo_GSE181574")
-lollipopPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+lollipopPlot(seDataFgsea = sig2Fun_result)
 }

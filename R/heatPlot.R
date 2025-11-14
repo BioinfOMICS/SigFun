@@ -1,97 +1,171 @@
 #' @title heatPlot
-#' @description The \code{heatplot} function generates a dot plot heatmap for
-#' visualizing gene set enrichment analysis (GSEA) results. It displays genes
-#' on the x-axis and pathways on the y-axis, with dots colored by correlation
-#' coefficients and sized by statistical significance measures.
-#' @param SE_data.fgsea A \code{SummarizedExperiment} object containing GSEA
-#'   results and correlation data. The object must contain:
-#'   \itemize{
-#'     \item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object
-#'     \item \code{metadata(SE_data.fgsea)$cor.df}: Correlation data frame with
-#'           gene, correlation, and statistical columns
-#'   }
-#' @param breaklineN An integer specifying the number of characters after which
-#'   to break pathway names into multiple lines for better readability.
-#'   Default is \code{30}.
+#' @description The \code{heatPlot} function generates a dot-based heatmap to
+#'   visualize correlations between genes and enriched pathways from Gene Set
+#'   Enrichment Analysis (GSEA) results. Each dot represents a gene–pathway
+#'   relationship, colored by the correlation coefficient (or log2 fold change)
+#'   and sized by statistical significance measures such as p-value or adjusted
+#'   p-value.
+#'
+#' @param seDataFgsea A \code{SummarizedExperiment} object containing GSEA
+#'   results and correlation data. Typically extracted using the internal
+#'   \code{.extractDF()} function with types \code{"gseaReadable"} and
+#'   \code{"corCoef"}.
+#' @param breaklineN Integer. Number of characters after which pathway names are
+#'   line-broken for readability. Default is \code{30}.
 #' @param showCategory Either a numeric value indicating the number of top
 #'   pathways to display, or a character vector specifying particular pathway
-#'   names to show. Default is \code{5}.
-#' @param distfun Character. The distance measure to be used when choosing
-#' \code{"hclustering"} as clustering method. Allow method include "euclidean",
-#' "manhattan", "maximum", "canberra", "binary", and "minkowski".
-#' @param hclustfun Character. The agglomeration method to be used when choosing
-#' \code{"hclustering"} as clustering method. This should be (an unambiguous
-#' abbreviation of) one of "ward.D", "ward.D2", "single", "complete",
-#' "average" (=UPGMA), "mcquitty" (= WPGMA), "median" (= WPGMC), or "centroid"
-#' (= UPGMC).
-#' @param dotColor A character string specifying which column from the
-#' correlation data frame to use for dot color.
-#' @param dotSize A character string specifying which column from the
-#' correlation data frame to use for dot sizing. Must be one of
-#' \code{c('pval', 'p.adjust')}. Default is \code{pval}.
-#' @return A list containing two elements:
-#'   \describe{
-#'     \item{\code{heatPlot}}{A ggplot2 object representing a dot plot heatmap
-#'           with genes clustered on the x-axis and pathways with formatted
-#'           names on the y-axis. Dots are colored by correlation coefficients
-#'           and sized by statistical significance measures}
-#'     \item{\code{table_heatPlot}}{A data.frame containing the plot data
-#'           with columns: \code{original_name} (original pathway IDs),
-#'           \code{label_name} (formatted pathway names with line breaks),
-#'           \code{Gene} (gene symbols), \code{Coefficient} (correlation
-#'           coefficients), and a column named after the \code{dotSize}
-#'           parameter (statistical significance values used for dot sizing)}
+#'   names to include. Default is \code{5}.
+#' @param size Character. Column name representing statistical significance
+#'   values for dot sizing. Must be one of \code{"pvalue"} or \code{"p.adjust"}.
+#'   Default is \code{"pvalue"}.
+#' @param color Character. Column name representing the color variable for dots.
+#'   Must be one of \code{"cor"} or \code{"log2FC"}. Default is \code{"cor"}.
+#' @param disFun Character. Distance metric for gene clustering along the
+#'   x-axis, passed to \code{dist()}. Supported options include
+#'   \code{"euclidean"}, \code{"manhattan"}, \code{"canberra"}, etc.
+#'   Default is \code{"euclidean"}.
+#' @param hclustFun Character. Hierarchical clustering method used for gene
+#'   ordering, passed to \code{hclust()}. Must be one of \code{"ward.D"},
+#'   \code{"ward.D2"}, \code{"average"}, \code{"complete"}, \code{"single"},
+#'   etc. Default is \code{"ward.D"}.
+#' @param fontSize Numeric. Base font size for axis labels and legends.
+#'   Default is \code{8}.
+#'
+#' @details
+#'   This function provides a compact visualization to highlight how individual
+#'   genes contribute to enriched pathways. The heatmap layout displays genes on
+#'   the x-axis (optionally clustered by correlation patterns) and pathways on
+#'   the y-axis. Dot color represents correlation direction/intensity, and dot
+#'   size encodes statistical significance.
+#'
+#'   Visual encoding follows the SigFun aesthetic design:
+#'   \itemize{
+#'     \item \strong{Dot color:} Correlation coefficient (\code{cor}) or log2FC
+#'     \item \strong{Dot size:} -log10(p-value) or -log10(p.adjust)
+#'     \item \strong{X-axis:} Genes clustered by correlation similarity
+#'     \item \strong{Y-axis:} Pathway names (wrapped by \code{breaklineN})
 #'   }
+#'
+#' @return A named list with two elements:
+#'   \describe{
+#'     \item{\code{heatPlot}}{A \code{ggplot2} object showing the gene–pathway
+#'       heatmap with correlation color and significance size encoding.}
+#'     \item{\code{tableHeatPlot}}{A \code{data.frame} summarizing the data used
+#'       in the plot, including:
+#'       \itemize{
+#'         \item \code{original_name}: Original pathway IDs
+#'         \item \code{label_name}: Formatted pathway names with line breaks
+#'         \item \code{Gene}: Gene symbols
+#'         \item \code{Coefficient}: Correlation coefficient or log2FC values
+#'           (depending on the \code{color} parameter)
+#'         \item Statistical significance column: The column specified by the
+#'           \code{size} parameter (\code{pvalue} or \code{p.adjust})
+#'         \item \code{neg_log_size}: Transformed significance value
+#'           (-log10 of the size column)
+#'       }}
+#'   }
+#'
+#' @importFrom ggplot2 ggplot geom_point scale_fill_gradient2 scale_size aes
+#'   guide_legend guide_colorbar theme_minimal theme element_blank element_text
+#'   element_line xlab ylab guides
+#' @importFrom dplyr select rename mutate left_join all_of any_of
+#' @importFrom rlang .data := !!
+#' @importFrom cli cli_abort
+#'
 #' @export
 #' @examples
-#' data("demo_GSE181574")
-#' heatPlot(SE_data.fgsea=GSE181574.sigfun, showCategory=3)
-heatPlot <- function(SE_data.fgsea, breaklineN=30, showCategory=5,
-    dotSize='pval', dotColor='cor', distfun='euclidean', hclustfun='ward.D'){
-    match.arg(dotSize, c('pval', 'p.adjust'))
-    gseaReadable <- .extractDF(SE_data.fgsea, type="gseaReadable")
-    cor.df <- .extractDF(SE_data.fgsea, type="corCoef")
-    if(isFALSE(dotColor %in% colnames(cor.df))){
-        cli::cli_abort(
-        'The input {.arg dotColor} must be a {.cls character} and must be
-        included in the column names of {.field SE_data.fgsea@metadata$cor.df}.')
-    }
-    if(isFALSE(dotSize %in% colnames(cor.df))){
-      cli::cli_abort(
-        'The input {.arg dotSize} must be a {.cls character} and must be
-        included in the column names of {.field SE_data.fgsea@metadata$cor.df}.')
-    }
-    data <- .extractGeneSets(gseaReadable, showCategory)
-    fontSize <- ifelse(length(unique(data$categoryID)) < 10, 12, 10)
+#' data("sig2Fun_result")
+#' heatPlot(seDataFgsea = sig2Fun_result)
+#'
+#' @note
+#' Requires \pkg{ggplot2} (>= 3.5.0) and \pkg{dplyr} (>= 1.1.0) for full compatibility.
+
+# Note: Requires ggplot2 (>= 3.5.0) and dplyr (>= 1.1.0)
+heatPlot <- function(
+        seDataFgsea, breaklineN = 30, showCategory = 5,
+        size = 'pvalue', color = 'cor',
+        disFun = 'euclidean', hclustFun = 'ward.D',
+        fontSize = 8
+) {
+
+    size <- match.arg(size, c('pvalue', 'p.adjust'))
+    color <- match.arg(color, c('cor', 'log2FC'))
+
+    gseaReadable <- .extractDF(seDataFgsea, type = "gseaReadable")
+    cor.df <- .extractDF(seDataFgsea, type = "corCoef")
     cor.df <- cor.df |>
-      dplyr::select(gene, dplyr::all_of(dotColor), dplyr::all_of(dotSize)) |>
-      dplyr::rename(Gene=gene,
-        Coef=dplyr::all_of(dotColor), size=dplyr::all_of(dotSize))
+        dplyr::rename(pvalue = dplyr::any_of("pval"))
+
+    data <- .extractGeneSets(gseaReadable, showCategory)
+
+    cor.df <- cor.df |>
+        dplyr::select(gene, dplyr::all_of(color), dplyr::all_of(size)) |>
+        dplyr::rename(
+            Gene = gene,
+            Coef = dplyr::all_of(color),
+            size = dplyr::all_of(size)
+        ) |>
+        dplyr::mutate(neg_log_size = -log10(size))
+
     if (gseaReadable@readable && gseaReadable@keytype != "SYMBOL") {
-        cor.df <- data.frame(Gene=names(gseaReadable@gene2Symbol),
-            genesymbol=gseaReadable@gene2Symbol) |>
-            merge(cor.df) |> dplyr::select(-Gene) |>
-            dplyr::rename(Gene=genesymbol)
+        cor.df <- data.frame(
+            Gene = names(gseaReadable@gene2Symbol),
+            genesymbol = gseaReadable@gene2Symbol
+        ) |>
+            merge(cor.df) |>
+            dplyr::select(-Gene) |>
+            dplyr::rename(Gene = genesymbol)
     }
+
     data <- dplyr::left_join(data, cor.df) |>
-        dplyr::mutate(name=.labelBreak(categoryID, breaklineN))
+        dplyr::mutate(name = .labelBreak(categoryID, breaklineN))
+
     heatPlot <- data |>
-        dplyr::mutate(Gene=factor(Gene,
-            levels=.geneOrder(data, distfun, hclustfun))) |>
-        ggplot2::ggplot(ggplot2::aes(x=Gene, y=name)) +
-        ggplot2::geom_point(ggplot2::aes(size=size, fill=Coef),
-            color='black', shape=21) +
-        .scale_fill(data$Coef) + ggplot2::xlab(NULL) + ggplot2::ylab(NULL) +
-        ggplot2::guides(fill=ggplot2::guide_colorbar(title=dotColor)) +
+        dplyr::mutate(
+            Gene = factor(Gene, levels = .geneOrder(data, disFun, hclustFun))
+        ) |>
+        ggplot2::ggplot(ggplot2::aes(x = Gene, y = name)) +
+        ggplot2::geom_point(
+            ggplot2::aes(size = neg_log_size, fill = Coef),
+            color = 'grey20', shape = 21, stroke = 0.3
+        ) +
+        ggplot2::scale_fill_gradient2(
+            low = "#08306b", mid = "white", high = "#b3200a",
+            midpoint = 0, name = color
+        ) +
+        ggplot2::xlab(NULL) + ggplot2::ylab(NULL) +
+        ggplot2::guides(
+            size = ggplot2::guide_legend(
+                order = 1,
+                title = bquote(-log[10](.(size)))
+            ),
+            fill = ggplot2::guide_colorbar(
+                order = 2,
+                title = color,
+                barwidth = 0.9,
+                barheight = 4.5
+            )
+        ) +
+        ggplot2::scale_size(range = c(1, 4.8)) +
         ggplot2::theme_minimal() +
-        ggplot2::scale_size(name=dotSize, range=c(4, 1.2)) +
         ggplot2::theme(
-            panel.grid.major=ggplot2::element_blank(),
-            axis.text.x=ggplot2::element_text(
-                angle=60, hjust=1, color='black', size=fontSize),
-            axis.text.y=ggplot2::element_text(color='black', size=12))
-    table_heatPlot <- data |>
-        dplyr::select(original_name=categoryID, label_name=name,
-            Gene, Coefficient=Coef, !!dotSize := size)
-    return(list(heatPlot=heatPlot, table_heatPlot=table_heatPlot))
+            panel.grid.major = ggplot2::element_blank(),
+            panel.grid.major.y = element_line(color = "grey95", linewidth = 0.3),
+            axis.text.x = ggplot2::element_text(
+                angle = 90, hjust = 1, color = 'black', size = fontSize
+            ),
+            axis.text.y = ggplot2::element_text(color = 'black', size = fontSize),
+            legend.title = element_text(size = fontSize + 2),
+            legend.text = element_text(size = fontSize)
+        )
+
+    tableHeatPlot <- data |>
+        dplyr::select(
+            original_name = categoryID,
+            label_name = name,
+            Gene, Coefficient = Coef,
+            !!size := size,
+            neg_log_size
+        )
+    return(list(heatPlot = heatPlot, tableHeatPlot = tableHeatPlot))
 }

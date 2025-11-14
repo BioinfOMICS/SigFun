@@ -4,17 +4,17 @@
 \alias{sigCor}
 \title{Signature-Transcriptome Correlation Analysis}
 \usage{
-sigCor(SE_data, cor.method = "spearman", Z.transform = FALSE)
+sigCor(seData, corMethod = "spearman", zTransform = FALSE)
 }
 \arguments{
-\item{SE_data}{A \code{SummarizedExperiment} object containing:
+\item{seData}{A \code{SummarizedExperiment} object containing:
 \itemize{
 \item \code{assays}: Gene expression matrix (genes in rows, samples in columns)
 \item \code{colData}: Signature scores/classifications for each sample
 \item \code{rowData}: Gene annotation with ENSEMBL IDs and symbols
 }}
 
-\item{cor.method}{Correlation method:
+\item{corMethod}{Correlation method:
 \itemize{
 \item "spearman" (default): Non-parametric rank correlation
 \item "pearson": Linear correlation
@@ -22,7 +22,7 @@ sigCor(SE_data, cor.method = "spearman", Z.transform = FALSE)
 \item "logit": Logistic regression for binary signatures (e.g., high/low risk)
 }}
 
-\item{Z.transform}{Logical. Whether to z-score normalize expression data:
+\item{zTransform}{Logical. Whether to z-score normalize expression data:
 \itemize{
 \item \code{FALSE} (default): No transformation (recommended for binary signatures)
 \item \code{TRUE}: Standardize expression values (recommended for continuous
@@ -55,23 +55,16 @@ This function performs three key operations:
 }
 }
 \examples{
-# Load demo data
-data("demo_GSE181574")
+data("expr.data")
+data("mapping")
+data("SIG_MAT")
+seData <- SummarizedExperiment::SummarizedExperiment(
+    assays=list(abundance=as.matrix(expr.data)),
+    rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
+    colData=S4Vectors::DataFrame(SIG_MAT))
 
 # Binary signature analysis (MammaPrint high/low risk)
-SE_cor_logit <- sigCor(
-  SE_data = SE_GSE181574,
-  cor.method = "logit",
-  Z.transform = FALSE
-)
-
-# Continuous signature analysis (e.g., risk score)
-SE_cor_spearman <- sigCor(
-  SE_data = SE_GSE181574,
-  cor.method = "spearman",
-  Z.transform = TRUE
-)
-
+seCorLogit <- sigCor(seData=seData, corMethod="logit")
 # Access results
-metadata(SE_cor_logit)$cor.df
+S4Vectors::metadata(seCorLogit)$cor.df
 }

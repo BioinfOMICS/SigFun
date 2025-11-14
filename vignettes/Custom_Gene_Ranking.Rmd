@@ -1,0 +1,140 @@
+---
+title: "Custom Gene Ranking"
+package: SigFun
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Custom Gene Ranking}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r style, echo=FALSE, results='asis'}
+BiocStyle::markdown(css.files = c('custom.css'))
+knitr::opts_chunk$set(collapse=TRUE, comment="#>")
+```
+
+# Introduction
+
+The Custom Gene Ranking workflow is designed for users who have already
+computed gene-level statistics outside of SigFun (e.g., from
+differential expression analysis, external tools, or custom metrics).
+Instead of computing signature-gene correlations via `sigCor()`, you can
+directly supply a pre-ranked gene list and leverage SigFun's enrichment
+and visualization capabilities.
+
+This approach is useful when you want to:
+
+-   Use existing differential expression results without re-computing
+    associations
+
+-   Incorporate external metrics like effect sizes, z-scores, or
+    clinical hazard ratios
+
+-   Rank genes by custom statistics (composite scores, domain-specific
+    measures)
+
+-   Compare enrichment results across different ranking strategies using
+    the same visualization framework
+
+# Minimal Requirements
+
+A data frame named **`cor.df`** in `metadata(SE)$cor.df` with at least:
+
+-   `gene` — gene identifier (should match the ID type in `rowData(SE)`
+    and `t2g`)
+
+-   **one numeric column** to rank by (e.g., `log2FC`, `zscore`,
+    `other_statistics`)
+
+| Orientation matters: SigFun assumes **higher values = stronger positive rank**. If your metric is inverse, multiply by −1 first.
+
+# Quick Recipe
+
+## Build the `SummarizedExperiment`
+
+```{r build_summarizedExperiment, eval= FALSE, warning=FALSE}
+library(SigFun)
+library(dplyr)
+
+# Load demo data
+data("expr.data"); data("mapping"); data("SIG_MAT"); data("t2g")
+
+SE_demo <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(abundance = as.matrix(expr.data)),
+  rowData = S4Vectors::DataFrame(mapping, row.names = mapping$ensg_id),
+  colData = S4Vectors::DataFrame(SIG_MAT)
+)
+```
+
+## Attach your `cor.df`
+
+```{r attach_your_cor.df, eval=FALSE, warning=FALSE}
+# Example: simulate custom stats (replace with your results)
+custom_cordf <- data.frame(
+  gene = mapping$ensg_id,
+  log2FC = rnorm(nrow(mapping), mean = 0, sd = 2),
+  other_statistics = rnorm(nrow(mapping), mean = 1, sd = 4)
+)
+
+# (Optional) basic cleanup
+custom_cordf <- custom_cordf %>%
+  dplyr::filter(!is.na(gene)) %>%
+  dplyr::distinct(gene, .keep_all = TRUE)
+
+S4Vectors::metadata(SE_demo)$cor.df <- custom_cordf
+```
+
+## Run SigFun with your metric
+
+```{r run_SigFun_with_your_metric, warning=FALSE, eval=FALSE}
+# Replace with your data
+# Run SigFun with your metric
+SE_res <- sig2Fun(
+  SE_demo,
+  rankingMethod = "log2FC",   # <-- column name inside cor.df
+  t2g = t2g,  
+  strings = c("GOBP", "GOMF")      # controls the databases used to plot heatmap
+)
+
+# Peek results
+head(S4Vectors::as.data.frame(S4Vectors::metadata(SE_res)$gseaResult)[,
+     c("ID","Description","NES","pvalue","p.adjust")])
+```
+
+## Optional: Use a different metric
+
+```{r use_a_different_metric, eval=FALSE}
+# You can use other metrics by replacing other_statistics with your desired metric. 
+SE_res2 <- sig2Fun(
+  SE_demo, 
+  rankingMethod = "other_statistics", 
+  t2g = t2g, 
+  strings = c("KEGG", "GOBP")
+)
+```
+
+# Guardrails (tiny checklist)
+
+-   **ID match**: `cor.df$gene` must match the gene identifiers in
+    `rowData(SE)` and the gene ID column in `t2g`. All three must use
+    the same ID type (e.g., all Ensembl IDs or all gene symbols).
+
+-   **Duplicates**: keep one row per gene.
+
+-   **NAs**: remove/replace before running.
+
+-   **Sign**: confirm ranking direction; flip sign if needed.
+
+# Session Information
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```

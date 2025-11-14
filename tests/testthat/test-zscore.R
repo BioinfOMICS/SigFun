@@ -4,11 +4,6 @@
 library(testthat)
 library(scales)
 
-# Ensure the package is properly loaded
-if (!isNamespaceLoaded("SigFun")) {
-    requireNamespace("SigFun", quietly = TRUE)
-}
-
 test_that(".z_score_cal basic functionality works", {
     # Test with simple numeric vector
     x <- c(1, 2, 3, 4, 5)
@@ -41,11 +36,6 @@ test_that(".z_score_cal handles single value", {
     # Test with single value - expect error due to function design
     x <- 10
     expect_error(.z_score_cal(x, NA.rm = TRUE))
-})
-
-test_that(".z_score_cal handles empty vector", {
-    # Test with empty vector - skip this test as it causes issues
-    skip("Empty vector test skipped - causes NA in condition")
 })
 
 test_that(".z_score_cal handles NA values with NA.rm = FALSE", {

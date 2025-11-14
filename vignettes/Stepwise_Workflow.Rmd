@@ -1,0 +1,294 @@
+---
+title: "Stepwise Workflow"
+package: SigFun
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Stepwise Workflow}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r style, echo=FALSE, results='asis'}
+BiocStyle::markdown(css.files = c('custom.css'))
+knitr::opts_chunk$set(collapse=TRUE, comment="#>")
+```
+
+# Introduction
+
+The **QuickStart (Streamlined) vignette** showed the one‑call pipeline
+(`sig2Fun()`), which computes associations, runs enrichment, and
+produces figures automatically. The **stepwise workflow** is designed
+for advanced users who want full control between steps. It makes the
+intermediate **correlation table** (`cor.df`) explicit, enabling you to:
+
+-   Inspect association statistics and diagnostics before enrichment
+
+-   Apply **custom ranking** or add orthogonal metrics (effect size,
+    variance, clinical HR)
+
+-   Try **alternative enrichment engines** while retaining SigFun
+    plotting
+
+-   Reuse a single `cor.df` across multiple ontology collections
+
+**Tip**: To use SigFun’s plotting functions, we recommend running
+enrichment with `clusterProfiler::GSEA()`, which returns objects
+compatible with SigFun’s visual layers.
+
+# Run Stepwise Workflow
+
+## Overview
+
+-   **Data Input**: `SummarizedExperiment` with expression, feature
+    annotations, and sample covariates
+
+-   **Association Calculation**: `sigCor()` builds `cor.df` (correlation
+    for numeric signatures; logistic regression for binary)
+
+-   **Functional Enrichment**: rank genes by your chosen metric (e.g.,
+    `cor`) and run `clusterProfiler::GSEA`
+
+-   **Visual Exploration**: SigFun plotting (e.g., `plot_heat()`) on the
+    resulting object
+
+## Requirements & Method Selection
+
+-   Input: `SummarizedExperiment` (`assays$abundance`: expression;
+    `rowData`: gene mapping; `colData`: sample metadata including the
+    **signature** column[s]). See the *Data Preparation vignette* for
+    details.
+
+-   Ontology: a `t2g` data.frame with columns `gs_name` and
+    `ensembl_gene` (see [Ontology Database Setup] for setup).
+
+-   **Choose `cor.method`**
+
+    -   **Numeric signatures**: `"spearman"` (default), `"pearson"`, or
+        `"kendall"`
+
+    -   **Binary signatures**: `"logit"` (logistic regression)
+
+The association statistic used for ranking is recorded in `cor.df`
+(e.g., column `cor` for correlations; for logistic, SigFun stores an
+analogous signed statistic). You may swap in a different column for
+ranking if desired.
+
+## Load the Package and Demo Data
+
+```{r load_package_and_demo_datasets, message=FALSE}
+# Core packages
+library(SigFun)
+library(dplyr)
+
+
+# Demo resources bundled with SigFun
+data("expr.data") # expression matrix (genes x samples)
+data("mapping") # feature annotations with ensembl IDs
+data("SIG_MAT") # sample‑level signature(s)
+data("t2g") # ontology table (gs_name, ensembl_gene)
+
+
+# (Optional) Subset ontology to speed up the demo, e.g., KEGG only
+t2g_kegg <- t2g %>% dplyr::filter(grepl('^KEGG', gs_name))
+
+
+# Assemble SummarizedExperiment
+SE_demo <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(abundance = as.matrix(expr.data)),
+  rowData = S4Vectors::DataFrame(mapping, row.names = mapping$ensg_id),
+  colData = S4Vectors::DataFrame(SIG_MAT)
+)
+
+
+SE_demo
+```
+
+## Compute Genome‑wide Associations (`sigCor`)
+
+```{R compute_genome_wide_associations}
+# Choose method that matches your signature type
+# Binary signature example:
+SE_demo <- sigCor(seData = SE_demo, corMethod = 'logit')
+
+
+# Inspect the correlation table (stored in metadata)
+cor.df <- S4Vectors::metadata(SE_demo)$cor.df
+head(cor.df)
+
+
+# Quick QA: NA removal and duplicates (if any)
+cor.df <- cor.df %>% distinct(gene, .keep_all = TRUE) %>% filter(!is.na(cor))
+```
+
+**Notes**
+
+-   `cor.df` contains at least: `gene` (Ensembl ID), ranking statistic
+    (e.g., `cor`), and p‑values.
+
+-   You can append additional columns (effect sizes, CV, HR) before
+    enrichment.
+
+## Build a Ranked Gene Vector & Run GSEA
+
+`clusterProfiler::GSEA()` expects a **named numeric vector** ranked from
+high to low. Here we use `cor.df$cor` and the Ensembl IDs for names;
+replace with any metric you prefer.
+
+```{R build_ranked_gene_vector_and_run_GSEA}
+# Create ranked vector for GSEA
+rank_metric <- cor.df$cor
+names(rank_metric) <- cor.df$gene
+rank_metric <- sort(rank_metric, decreasing = TRUE)
+
+
+# Run GSEA using the ontology of choice (KEGG here for speed)
+# Users can change the parameters based on their own choices
+gseaRes <- clusterProfiler::GSEA(
+  geneList = rank_metric,
+  TERM2GENE = t2g_kegg,
+  minGSSize = 10,
+  pvalueCutoff = 1
+)
+
+
+# Attach results back onto the object for downstream plotting
+S4Vectors::metadata(SE_demo)$gseaResult <- gseaRes
+S4Vectors::metadata(SE_demo)$cor.df <- cor.df
+
+
+SE_demo
+```
+
+**Tips**
+
+-   Adjust `minGSSize`, `maxGSSize`, and `pvalueCutoff` to suit your
+    dataset size. Users may change other parameters accordingly.
+
+-   If your ranking metric increases with *negative* association, sort
+    accordingly; SigFun’s default `cor` is already oriented for
+    decreasing sort.
+
+## Prepare Pathway List & Plot with SigFun
+
+`plot_heat()` needs a list of pathways (gene sets) and an object whose
+metadata includes `gseaResult` and `cor.df`.
+
+```{R prepare_pathway_list_and_plot_heatmap}
+# Convert t2g to a named list of gene sets
+pathways.all <- setNames(
+  lapply(unique(t2g_kegg$gs_name), function(x){
+    t2g_kegg %>% 
+      dplyr::filter(gs_name == x) %>% 
+      dplyr::pull(ensembl_gene)
+  }), 
+  nm = unique(t2g_kegg$gs_name)
+)
+# View pathways.all format: View(pathways.all)
+```
+
+### Integrated Heatmap (KEGG panel)
+
+```{R integrated_heatmap, fig.width=8, fig.height=7.5, out.width="80%"}
+KEGG.plot <- plot_heat(
+  seDataFgsea = SE_demo,
+  pathwaysAll = pathways.all,
+  significantType = 'pval', # column in cor.df
+  strings = c('KEGG'),
+  topN = 10,
+  rankingMethod = 'cor' # column in cor.df
+)
+KEGG.plot
+```
+
+### Focused Panel (e.g., pathways containing “SIGNALING”)
+
+```{R focused_panel, fig.width=8, fig.height=7.5, out.width="80%"}
+SIGNALING.plot <- plot_heat(
+  seDataFgsea = SE_demo,
+  pathwaysAll = pathways.all,
+  significantType = 'pval',
+  strings = c('SIGNALING'),
+  topN = 10,
+  rankingMethod = 'cor'
+)
+SIGNALING.plot
+```
+
+## Inspecting Results
+
+**Correlation Table**
+
+```{R correlation_table, warning = FALSE}
+cor.df %>%
+  dplyr::select(gene, cor, pval) %>%
+  DT::datatable(options = list(pageLength = 8, scrollX = TRUE), rownames = FALSE)
+```
+
+**GSEA Table**
+
+```{R GSEA_table, warning=FALSE}
+S4Vectors::as.data.frame(S4Vectors::metadata(SE_demo)$gseaResult) %>%
+  dplyr::select(ID, Description, NES, pvalue, p.adjust, qvalue) %>%
+  DT::datatable(options = list(pageLength = 10, scrollX = TRUE), rownames=FALSE)
+```
+
+# Common Customizations
+
+-   **Alternative ranking**: replace `cor` with a custom metric (e.g.,
+    signed log‑p, effect size). Ensure it is numeric and named by gene
+    IDs.
+
+-   **Signature types**: for numeric signatures, use
+    `cor.method = 'spearman'` (robust default) or `pearson`/`kendall` as
+    needed.
+
+-   **Multiple signatures**: run `sigCor` per signature (or combine into
+    multivariate models if supported in your pipeline) and compare GSEA
+    outputs.
+
+-   **Ontology panels**: supply a broader `t2g` (e.g., H, C2, C5) and
+    switch `strings = c('HALLMARK', 'KEGG', 'REACTOME', 'GOBP')` in
+    `plot_heat`.
+
+# Appendices
+
+## Ontology Database Setup
+
+```{r t2g_prepare, warning=FALSE, eval=FALSE}
+# Prepare gene ontology data. We strongly recommend MsigDB.
+# The following code can help you to 
+if (!require(msigdbr, quietly = TRUE)) {
+    install.packages("msigdbr")
+    library(msigdbr)
+}
+# Download human HALLMARKER ontology information
+H_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "H") %>% 
+    dplyr::select(gs_name, ensembl_gene)
+
+# Download human C2 pathway information
+C2_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C2") %>% 
+    dplyr::filter(gs_subcat %in% c("CP:BIOCARTA","CP:KEGG_MEDICUS",
+        "CP:REACTOME","CP:WIKIPATHWAYS")) %>% 
+    dplyr::select(gs_name, ensembl_gene)
+# Download human C5 ontology information
+C5_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C5") %>% 
+    dplyr::filter(gs_subcat %in% c("GO:BP","GO:CC","GO:MF")) %>% 
+    dplyr::select(gs_name, ensembl_gene)
+
+# Combine them
+t2g <- rbind(H_t2g, C2_t2g, C5_t2g)
+```
+
+## Session Information
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```

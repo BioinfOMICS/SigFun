@@ -5,75 +5,139 @@
 \title{cnetPlot}
 \usage{
 cnetPlot(
-  SE_data.fgsea,
+  seDataFgsea,
   showCategory = 5,
-  node_label = "category",
-  fontSize = 1.2,
-  color = TRUE,
-  dotColor = "cor",
+  nodeLabel = "category",
+  fontSize = 1,
+  color = NULL,
   circular = FALSE,
-  breaklineN = 30
+  breaklineN = 30,
+  layout = igraph::layout_nicely,
+  colorCategory = "#E5C494",
+  sizeCategory = 0.9,
+  colorItem = "#B3B3B3",
+  sizeItem = 0.8,
+  colorEdge = "grey80",
+  sizeEdge = 0.4,
+  hilight = "none",
+  hilightAlpha = 0.3,
+  seed = NULL
 )
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results in its metadata. Required metadata components:
-\describe{
-\item{\code{gseaResult}}{GSEA result object with pathway information,
-gene sets, and enrichment statistics}
-\item{\code{cor.df}}{Data frame with gene correlation values (when
-\code{color=TRUE}), containing \code{gene} and \code{cor} columns}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results. The object must include:
+\itemize{
+\item \code{metadata(seDataFgsea)$gseaResult}: A GSEA result object with
+pathway information, gene sets, and enrichment statistics.
+\item (Optional) \code{metadata(seDataFgsea)$cor.df}: A data frame of gene-level
+correlation values, required when using the \code{color} parameter.
 }}
 
-\item{showCategory}{Either a numeric value indicating the number of top
-pathways to display, or a character vector specifying particular pathway
-names to show. Default is \code{5}.}
+\item{showCategory}{Either a numeric value specifying the number of top
+pathways to display, or a character vector specifying specific pathway
+names. Default is \code{5}.}
 
-\item{node_label}{Character string specifying node label type. One of 'all',
-'none', 'category', 'item', 'exclusive' or 'share'.
-Default: \code{"category"}}
+\item{nodeLabel}{Character string specifying which type of nodes should be
+labeled. Must be one of \code{c("category", "all", "none", "item", "gene",
+  "exclusive", "share")}. Default is \code{"category"}.}
 
-\item{fontSize}{Numeric value controlling category label font size in the
-network. Default: \code{1.2}}
+\item{fontSize}{Numeric. Base size for text labels (applied as a scaling factor).
+Default is \code{1}.}
 
-\item{color}{Logical indicating whether to color-code genes by their
-correlation values. Requires correlation data in metadata when \code{TRUE}.
-Default: \code{TRUE}}
+\item{color}{Character or \code{NULL}. The column name from
+\code{metadata(seDataFgsea)$cor.df} to be used for coloring gene nodes
+(e.g., correlation coefficients or log2 fold changes). When \code{NULL},
+nodes are colored using the default item color. Default is \code{NULL}.}
 
-\item{dotColor}{A character string specifying which column from the
-correlation data frame to use for dot color.}
+\item{circular}{Logical. Whether to arrange nodes in a circular layout.
+Default is \code{FALSE}.}
 
-\item{circular}{Logical indicating whether to use circular layout
-(\code{TRUE}) or automatic nice layout (\code{FALSE}). Default: \code{FALSE}}
+\item{breaklineN}{Integer. Maximum number of characters before inserting line
+breaks in pathway names for improved readability. Default is \code{30}.}
 
-\item{breaklineN}{An integer specifying the number of characters after which
-to break pathway names into multiple lines for better readability.}
+\item{layout}{Layout function for node positioning. Default is
+\code{igraph::layout_nicely}. Can be replaced with any \pkg{igraph} layout
+function.}
+
+\item{colorCategory}{Character. Color for category (pathway) nodes.
+Default is \code{"#E5C494"}.}
+
+\item{sizeCategory}{Numeric. Scaling factor for category node sizes.
+Default is \code{0.9}.}
+
+\item{colorItem}{Character. Color for item (gene) nodes when
+\code{color = NULL}. Default is \code{"#B3B3B3"}.}
+
+\item{sizeItem}{Numeric. Scaling factor for item (gene) node sizes.
+Default is \code{0.8}.}
+
+\item{colorEdge}{Character. Edge color or \code{"category"} to color edges by
+their associated pathway. Default is \code{"grey80"}.}
+
+\item{sizeEdge}{Numeric. Edge line width. Default is \code{0.4}.}
+
+\item{hilight}{Character vector or \code{"none"}. Pathways to highlight
+(opacity = 1). Non-highlighted nodes will have reduced opacity controlled
+by \code{hilightAlpha}. Default is \code{"none"}.}
+
+\item{hilightAlpha}{Numeric. Transparency level (0–1) for non-highlighted
+nodes. Default is \code{0.3}.}
+
+\item{seed}{Integer or \code{NULL}. Random seed for reproducible layout
+generation. Default is \code{NULL}.}
 }
 \value{
-A list containing three elements:
-\describe{
-\item{\code{cnetPlot}}{A ggplot2 object representing the concept network
-visualization with pathways and genes connected by edges,
-optionally colored by correlation values}
-\item{\code{TableEdge_cnetPlot}}{A data.frame containing edge information
-with columns: \code{from} (pathway IDs) and \code{to} (individual
-genes from core enrichment), representing the connections between
-pathways and their associated genes}
-\item{\code{TableNode_cnetPlot}}{A data.frame containing node information
-with columns: \code{id} (node names/identifiers), \code{size}
-(node size values), and optionally \code{foldChange} (correlation
-values for color coding, included only when \code{color=TRUE})}
+A named list containing three components:
+\itemize{
+\item \code{cnetPlot}: A \code{ggplot2} object representing the concept
+network visualization.
+\item \code{tableEdgeCnetPlot}: A \code{data.frame} of network edges with
+columns:
+\itemize{
+\item \code{from}: Pathway (category) identifier.
+\item \code{to}: Gene symbol(s) associated with the pathway.
+}
+\item \code{tableNodeCnetPlot}: A \code{data.frame} of node attributes with
+columns:
+\itemize{
+\item \code{id}: Node identifier (pathway or gene name).
+\item \code{size}: Node size used in visualization.
+\item (Optional) Column named by \code{color} parameter, containing
+the numeric values mapped to gene color scale.
+}
 }
 }
 \description{
-Generates a concept network visualization for gene set
-enrichment analysis(GSEA) results. The network displays connections between
-enriched pathways and their associated genes, with optional color coding
-based on gene expression correlation values. This visualization helps
-identify hub genes that participate in multiple biological pathways and
-reveals the interconnected structure of enriched gene sets.
+The \code{cnetPlot} function generates a highly customizable
+concept network (CNET) visualization for gene set enrichment analysis (GSEA)
+results. It displays the relationships between enriched pathways and their
+associated genes as a network graph, where nodes represent pathways or genes
+and edges represent their associations. Users can control node and edge
+aesthetics, highlight specific pathways, and optionally map gene-level
+correlation values to node colors.
+}
+\details{
+This function builds upon \pkg{ggtangle} and \pkg{igraph} for flexible
+concept network visualization. Users can:
+\itemize{
+\item Control node/edge colors, sizes, and layout.
+\item Overlay continuous gene metrics (e.g., correlation, fold change).
+\item Highlight specific pathways using \code{hilight}.
+\item Automatically wrap long pathway names using \code{breaklineN}.
+}
+
+When \code{color} is provided, gene nodes are colored according to their
+corresponding values using a diverging or sequential color scale. When
+\code{color = NULL}, all item nodes are rendered in a uniform grey tone.
+}
+\note{
+Requires \pkg{ggtangle} (>= 1.0.0), \pkg{enrichplot} (>= 1.21.0),
+and \pkg{ggplot2} (>= 3.5.0) for full compatibility.
 }
 \examples{
-data("demo_GSE181574")
-cnetPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+cnetPlot(seDataFgsea = sig2Fun_result,
+         color = "cor")
+
 }

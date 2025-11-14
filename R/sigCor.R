@@ -4,16 +4,16 @@
 #'  bridges phenotypic signatures with transcriptomic data to enable downstream
 #'  functional analysis.
 #'
-#' @param SE_data A `SummarizedExperiment` object containing:
+#' @param seData A `SummarizedExperiment` object containing:
 #' - `assays`: Gene expression matrix (genes in rows, samples in columns)
 #' - `colData`: Signature scores/classifications for each sample
 #' - `rowData`: Gene annotation with ENSEMBL IDs and symbols
-#' @param cor.method Correlation method:
+#' @param corMethod Correlation method:
 #' - "spearman" (default): Non-parametric rank correlation
 #' - "pearson": Linear correlation
 #' - "kendall": Rank correlation for small datasets
 #' - "logit": Logistic regression for binary signatures (e.g., high/low risk)
-#' @param Z.transform Logical. Whether to z-score normalize expression data:
+#' @param zTransform Logical. Whether to z-score normalize expression data:
 #' - `FALSE` (default): No transformation (recommended for binary signatures)
 #' - `TRUE`: Standardize expression values (recommended for continuous
 #' signatures)
@@ -38,35 +38,25 @@
 #' @export
 #'
 #' @examples
-#' # Load demo data
-#' data("demo_GSE181574")
+#' data("expr.data")
+#' data("mapping")
+#' data("SIG_MAT")
+#' seData <- SummarizedExperiment::SummarizedExperiment(
+#'     assays=list(abundance=as.matrix(expr.data)),
+#'     rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
+#'     colData=S4Vectors::DataFrame(SIG_MAT))
 #'
 #' # Binary signature analysis (MammaPrint high/low risk)
-#' SE_cor_logit <- sigCor(
-#'   SE_data = SE_GSE181574,
-#'   cor.method = "logit",
-#'   Z.transform = FALSE
-#' )
-#'
-#' # Continuous signature analysis (e.g., risk score)
-#' SE_cor_spearman <- sigCor(
-#'   SE_data = SE_GSE181574,
-#'   cor.method = "spearman",
-#'   Z.transform = TRUE
-#' )
-#'
+#' seCorLogit <- sigCor(seData=seData, corMethod="logit")
 #' # Access results
-#' metadata(SE_cor_logit)$cor.df
+#' S4Vectors::metadata(seCorLogit)$cor.df
+sigCor <- function(seData, corMethod="spearman", zTransform=FALSE) {
+    signature.obj <- as.data.frame(SummarizedExperiment::colData(seData))
 
-
-
-sigCor <- function(SE_data, cor.method="spearman", Z.transform=FALSE) {
-    signature.obj <- as.data.frame(SummarizedExperiment::colData(SE_data))
-
-    exp_data <- as.data.frame(SummarizedExperiment::assay(SE_data))
+    exp_data <- as.data.frame(SummarizedExperiment::assay(seData))
     exp_data$ensg_id <- rownames(exp_data)
-    exp_data <- exp_data %>% tidyr::gather(-ensg_id, key="sample_id",
-                                            value="value")
+    exp_data <- exp_data %>%
+        tidyr::gather(-ensg_id, key="sample_id", value="value")
     S_ID <- intersect(signature.obj$sample_id, unique(exp_data$sample_id))
     exp_data.sid <- exp_data %>% dplyr::filter(sample_id %in% S_ID)
     signature.obj <- signature.obj %>% dplyr::filter(sample_id %in% S_ID)
@@ -81,26 +71,26 @@ sigCor <- function(SE_data, cor.method="spearman", Z.transform=FALSE) {
     pattern.signature <- cor.object$value
     pattern.genes <- cor.object %>% dplyr::select(-sample_id, -value)
     count.EffectSamples <- unlist(lapply(pattern.genes,
-                                        function(x) length(unique(x))))
+                                         function(x) length(unique(x))))
     rm.index <- which(count.EffectSamples < 2)
 
-    if (Z.transform == TRUE) {
+    if (zTransform == TRUE) {
         pattern.genes.norm <- if (length(rm.index) > 0) {
-        apply(pattern.genes[, -rm.index], 2, .z_score_cal)
-    } else { apply(pattern.genes, 2, .z_score_cal) }
+            apply(pattern.genes[, -rm.index], 2, .z_score_cal)
+        } else { apply(pattern.genes, 2, .z_score_cal) }
     } else { pattern.genes.norm <- if (length(rm.index) > 0)
-        {pattern.genes[, -rm.index]} else {pattern.genes} }
+    {pattern.genes[, -rm.index]} else {pattern.genes} }
 
-    if(cor.method %in% c("pearson", "kendall", "spearman")){
-    cor.list <- .corList(pattern.signature, pattern.genes.norm, cor.method)
+    if(corMethod %in% c("pearson", "kendall", "spearman")){
+        cor.list <- .corList(pattern.signature, pattern.genes.norm, corMethod)
     }
 
-    if(cor.method %in% c("logit")){
-    cor.list <- .logitList(y=pattern.signature, pattern.genes.norm, cor.method)
+    if(corMethod %in% c("logit")){
+        cor.list <- .logitList(y=pattern.signature, pattern.genes.norm, corMethod)
     }
 
     cor.df <- data.frame(gene=rownames(cor.list), cor=as.numeric(cor.list$cor) ,
-                        pval=as.numeric(cor.list$pval))
-    S4Vectors::metadata(SE_data) <- list(cor.df=cor.df)
-    return(SE_data)
+                         pval=as.numeric(cor.list$pval))
+    S4Vectors::metadata(seData) <- list(cor.df=cor.df)
+    return(seData)
 }

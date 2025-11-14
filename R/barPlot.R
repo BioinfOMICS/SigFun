@@ -1,117 +1,187 @@
-#' @title barplot
-#' @description The \code{barplot} function generates a horizontal bar plot
-#' for visualizing gene set enrichment analysis (GSEA) results. It displays the
-#' gene count for each pathway on the x-axis and pathway names on the y-axis,
-#' with bars colored by statistical significance measures or enrichment scores.
-#' @param SE_data.fgsea A \code{SummarizedExperiment} object containing GSEA
+#' @title barPlot
+#' @description The \code{barPlot} function generates a horizontal bar plot
+#'   for visualizing gene set enrichment analysis (GSEA) results. It supports
+#'   multiple x-axis variables (e.g., NES, Count, or GeneRatio) and allows
+#'   bar coloring and transparency to be mapped by statistical significance
+#'   measures (p-value, adjusted p-value, or q-value). This function provides
+#'   a flexible and publication-ready visualization of pathway-level enrichment.
+#'
+#' @param seDataFgsea A \code{SummarizedExperiment} object containing GSEA
 #'   results. The object must contain:
 #'   \itemize{
-#'     \item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object with
-#'           result slot containing pathway information
+#'     \item \code{metadata(seDataFgsea)$gseaResult}: GSEA result object whose
+#'       result slot contains pathway-level enrichment information.
 #'   }
-#' @param topN Integer. Number of top significant pathways to display per
-#' category (default=10).
-#' @param breaklineN An integer specifying the number of characters after which
-#' to break pathway names into multiple lines for better readability on the
-#' y-axis. Default is \code{30}.
-#' @param alpha A character string specifying which statistical measure to use
-#' for bar coloring transparency. Must be one of
-#' \code{c('pvalue', 'p.adjust', 'NES')}. Default uses argument matching.
+#' @param topN Numeric. Number of top-ranked pathways to display.
+#'   Default is \code{10}.
+#' @param breaklineN Integer. Maximum number of characters before wrapping
+#'   pathway names for improved readability. Default is \code{30}.
+#' @param alpha Character. Variable for transparency encoding.
+#'   Must be one of \code{'pvalue'}, \code{'p.adjust'}, or \code{'qvalue'}.
 #'   \itemize{
-#'     \item \code{pvalue}: Raw p-values
-#'     \item \code{p.adjust}: Adjusted p-values (multiple testing correction)
-#'     \item \code{NES}: Normalized Enrichment Score
+#'     \item \code{pvalue}: Raw p-values.
+#'     \item \code{p.adjust}: Adjusted p-values (multiple testing correction).
+#'     \item \code{qvalue}: q-values (alternative adjusted significance measure).
 #'   }
+#' @param x Character. Variable for the x-axis.
+#'   Must be one of \code{'NES'}, \code{'Count'}, or \code{'GeneRatio'}.
+#'   \itemize{
+#'     \item \code{NES}: Normalized Enrichment Score (default).
+#'     \item \code{Count}: Number of core enrichment genes in each pathway.
+#'     \item \code{GeneRatio}: Ratio of enriched genes to total genes in the set.
+#'   }
+#' @param fontSize Numeric. Base font size for plot text elements.
+#'   Default is \code{8}.
+#'
+#' @importFrom magrittr %>%
+#' @importFrom forcats fct_reorder
+#' @importFrom ggplot2 ggplot aes geom_col scale_fill_identity scale_alpha_continuous
+#'   scale_x_continuous labs theme_classic theme element_text element_line element_blank
+#'   guide_legend expansion margin
+#' @importFrom dplyr filter arrange mutate select slice all_of
+#'
 #' @return A named list containing two components:
-#' \itemize{
-#'   \item \code{barPlot}: A \code{ggplot2} object representing a horizontal
-#'         bar plot with:
-#'         \itemize{
-#'           \item X-axis: Gene count per pathway
-#'           \item Y-axis: Formatted pathway descriptions (ordered by count)
-#'           \item Bar color: Selected statistical measure (p-value, adjusted
-#'                 p-value, or NES)
-#'           \item Color legend: Continuous scale for the selected measure
-#'         }
-#'   \item \code{Table_barPlot}: A \code{data.frame} containing the underlying
-#'         data used for plotting with columns:
-#'         \itemize{
-#'           \item \code{original_name}: Original pathway identifiers
-#'           \item \code{label_name}: Formatted pathway names with line breaks
-#'           \item \code{Count}: Gene count for each pathway
-#'           \item Column named by \code{color} parameter: Statistical measure
-#'                 values used for coloring
-#'         }
-#' }
+#'   \describe{
+#'     \item{\code{barPlot}}{A \code{ggplot2} object representing the horizontal
+#'       bar plot, where:
+#'       \itemize{
+#'         \item X-axis: Selected variable (\code{NES}, \code{Count}, or
+#'           \code{GeneRatio})
+#'         \item Y-axis: Formatted pathway names (ordered by the selected variable)
+#'         \item Bar color: Encodes enrichment direction or significance
+#'         \item Transparency (alpha): Proportional to \code{-log10(alpha)} of the
+#'           chosen statistic
+#'       }}
+#'     \item{\code{tableBarPlot}}{A \code{data.frame} containing the underlying
+#'       plotting data with columns:
+#'       \itemize{
+#'         \item \code{original_name}: Original pathway identifiers.
+#'         \item \code{label_name}: Formatted pathway names with line breaks.
+#'         \item \code{NES / Count / GeneRatio}: The variable used on the x-axis,
+#'           depending on the selected \code{x} parameter.
+#'         \item \code{alpha}: Statistical values used for transparency
+#'           (e.g., p-value, adjusted p-value, or q-value).
+#'         \item \code{neg_log_alpha}: The transformed significance level
+#'           calculated as \code{-log10(alpha)}.
+#'         \item \code{alpha_value}: Rescaled transparency value ranging from 0–1,
+#'           used for plotting alpha intensity.
+#'       }}
+#'   }
+#'
 #' @export
 #' @examples
-#' data("demo_GSE181574")
-#' barPlot(SE_data.fgsea=GSE181574.sigfun)
-barPlot <- function(
-    SE_data.fgsea, topN=10, breaklineN=30, alpha='pvalue'){
-    match.arg(alpha, c('pvalue', 'p.adjust', 'qvalue'))
-    gseaRaw <- .extractDF(SE_data.fgsea, type='gseaRaw')
-    bottom.NES <- gseaRaw@result %>%
-      dplyr::filter(NES <= 0) %>%
-      dplyr::arrange(NES) %>% dplyr::slice(seq_len(topN))
-    top.NES <- gseaRaw@result %>%
-      dplyr::filter(NES > 0) %>%
-      dplyr::arrange(desc(NES)) %>% dplyr::slice(seq_len(topN))
-    all.NES <- rbind(top.NES, bottom.NES) %>%
-      dplyr::arrange(desc(NES)) %>%
-      dplyr::select(ID, NES, dplyr::all_of(alpha))
-    all.NES$alpha <- all.NES[,3]
-    all.NES <- all.NES%>%
-      dplyr::mutate(name=.labelBreak(ID, breaklineN)) %>%
-      dplyr::mutate(name=forcats::fct_reorder(name, NES)) %>%
-      dplyr::mutate(
-        neg_log_alpha=-log10(alpha),
-        neg_log_alpha=ifelse(is.infinite(neg_log_alpha),
-          max(neg_log_alpha[is.finite(neg_log_alpha)], na.rm=TRUE),
-          neg_log_alpha),
-        bar_color=ifelse(alpha >= 0.05, 'grey60',
-          ifelse(NES >= 0, '#FF5151', '#4169E1')))
-    max_neg_log <- max(all.NES$neg_log_alpha, na.rm=TRUE)
-    all.NES$alpha_value <- pmax(0, all.NES$neg_log_alpha / max_neg_log)
-    barPlot <- ggplot2::ggplot(all.NES,
-      ggplot2::aes(y=name, x=NES, fill=bar_color, alpha=alpha_value)) +
-      geom_col(width=.8) +
-      ggplot2::scale_fill_identity(
-        name="Significance", labels=c("Enriched", "NS", "Depleted"),
-        breaks=c('#FF5151', "grey60", '#4169E1'),
-        guide=ggplot2::guide_legend(override.aes=list(alpha=1))) +
-      ggplot2::scale_alpha_identity(
-        name=paste0("-log10(", alpha, ")"),
-        breaks=seq(0, 1, 0.25),
-        labels=sprintf("%.1f", seq(0, 1, 0.25) * max_neg_log),
-        guide=ggplot2::guide_legend(override.aes=list(fill="black"))) +
-      ggplot2::scale_x_continuous(
-        expand=ggplot2::expansion(mult=c(0.02, 0.02))) +
-      ggplot2::labs(x=NULL, Y=NULL, title=NULL) +
-      ggplot2::theme_minimal() +
-      ggplot2::theme(
-        panel.grid=ggplot2::element_blank(),
-        axis.title.x=ggplot2::element_text(
-          size=12, margin=ggplot2::margin(t=10)),
-        axis.title.y=ggplot2::element_blank(),
-        axis.text.y=ggplot2::element_text(
-          color="black", size=8, hjust=1, lineheight=.8),
-        axis.text.x=ggplot2::element_text(size=10),
-        axis.line.x=ggplot2::element_line(color="black", linewidth=0.5),
-        axis.line.y=ggplot2::element_line(color="black", linewidth=0.5),
-        axis.ticks.x=ggplot2::element_line(color="black", linewidth=0.3),
-        axis.ticks.y=ggplot2::element_line(color="grey40", linewidth=0.5),
-        axis.ticks.length.y=grid::unit(0.2, "cm"),
-        axis.ticks.length.x=grid::unit(0.15, "cm"),
-        legend.position="right",
-        legend.title=ggplot2::element_text(size=10),
-        legend.text=ggplot2::element_text(size=8),
-        legend.key.height=grid::unit(0.8, "cm"),
-        legend.key.width=grid::unit(0.8, "cm"),
-        legend.spacing.y=grid::unit(0.5, "cm"),
-        plot.margin=ggplot2::margin(10, 10, 10, 10)
-      )
-    Table_barPlot <- all.NES %>%
-      dplyr::select(original_name=ID, label_name=name, dplyr::everything())
-    return(list(barPlot=barPlot, Table_barPlot=Table_barPlot))
+#' data("sig2Fun_result")
+#' barPlot(seDataFgsea = sig2Fun_result)
+#'
+#' @note
+#' Requires \pkg{ggplot2} (>= 3.5.0) and \pkg{dplyr} (>= 1.1.0) for full compatibility.
+
+# Note: Requires ggplot2 (>= 3.5.0) and dplyr (>= 1.1.0)
+barPlot <- function(seDataFgsea, topN = 10, breaklineN = 30, alpha = "pvalue",
+                    x = "NES", fontSize = 8) {
+
+    match.arg(alpha, c("pvalue", "p.adjust", "qvalue"))
+    match.arg(x, c("NES", "Count", "GeneRatio"))
+
+    gseaRaw <- .extractDF(seDataFgsea, type = "gseaRaw")
+    res <- gseaRaw@result
+    if (!("Count" %in% colnames(res))) {
+        res$Count <- sapply(strsplit(res$core_enrichment, "/"), length)
+    }
+    if (!("GeneRatio" %in% colnames(res))) {
+        res$GeneRatio <- res$Count / res$setSize
+    }
+
+    if (x == "NES") {
+        bottomData <- res %>%
+            dplyr::filter(NES <= 0) %>%
+            dplyr::arrange(NES) %>% dplyr::slice(seq_len(topN))
+        topData <- res %>%
+            dplyr::filter(NES > 0) %>%
+            dplyr::arrange(desc(NES)) %>% dplyr::slice(seq_len(topN))
+        allData <- rbind(topData, bottomData) %>%
+            dplyr::arrange(desc(NES))
+    } else {
+        allData <- res %>%
+            dplyr::arrange(desc(!!rlang::sym(x))) %>%
+            dplyr::slice(seq_len(topN))
+    }
+
+    allData <- allData %>% dplyr::select(ID, dplyr::all_of(x), dplyr::all_of(alpha))
+    allData$alpha <- allData[[alpha]]
+    allData[[alpha]][is.na(allData[[alpha]])] <- 1
+    allData <- allData %>%
+        dplyr::mutate(
+            name = .labelBreak(ID, breaklineN),
+            name = forcats::fct_reorder(name, !!rlang::sym(x)),
+            neg_log_alpha = -log10(alpha),
+            neg_log_alpha = ifelse(is.infinite(neg_log_alpha),
+                                   max(neg_log_alpha[is.finite(neg_log_alpha)], na.rm = TRUE),
+                                   neg_log_alpha)
+        )
+
+    if (x == "NES") {
+        allData <- allData %>%
+            dplyr::mutate(
+                bar_color = ifelse(alpha >= 0.05, "grey60",
+                                   ifelse(NES >= 0, "#D25C43", "#5979A3"))
+            )
+    } else {
+        allData <- allData %>%
+            dplyr::mutate(
+                bar_color = ifelse(alpha >= 0.05, "grey60", "#D25C43")
+            )
+    }
+
+    max_neg_log <- max(allData$neg_log_alpha, na.rm = TRUE)
+    if (is.na(max_neg_log) || is.infinite(max_neg_log) || max_neg_log <= 0) {
+        message("No significant pathway detected — using default alpha scale.")
+        max_neg_log <- 1
+    }
+    allData$alpha_value <- pmax(0, allData$neg_log_alpha / max_neg_log)
+
+    bar_width <- if (x == "NES") 0.7 else 0.6
+    barPlot <- ggplot2::ggplot(
+        allData,
+        ggplot2::aes(
+            y = name, x = !!rlang::sym(x),
+            fill = bar_color, alpha = neg_log_alpha
+        )
+    ) +
+        ggplot2::geom_col(width = bar_width) +
+        ggplot2::scale_fill_identity(
+            name = "Significance",
+            labels = if (x == "NES") c("Enriched", "NS", "Depleted") else c("Significant", "NS"),
+            breaks = if (x == "NES") c("#D25C43", "grey60", "#5979A3") else c("#D25C43", "grey60"),
+            guide = ggplot2::guide_legend(override.aes = list(alpha = 1))
+        ) +
+        ggplot2::scale_alpha_continuous(
+            name = bquote(-log[10](.(alpha))),
+            range = c(0.2, 1),
+            guide = ggplot2::guide_legend(override.aes = list(fill = "black"))
+        ) +
+        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.02, 0.02))) +
+        ggplot2::labs(x = x, y = NULL, title = NULL) +
+        ggplot2::theme_classic(base_size = fontSize) +
+        ggplot2::theme(
+            panel.grid.major = ggplot2::element_blank(),
+            panel.grid.minor = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_text(size = fontSize + 2, face = "bold",
+                                                 margin = ggplot2::margin(t = 5)),
+            axis.text.y = ggplot2::element_text(color = "black", size = fontSize, hjust = 1),
+            axis.text.x = ggplot2::element_text(color = "black", size = fontSize, hjust = 0.5),
+            axis.line.x = ggplot2::element_line(color = "black", linewidth = 0.6),
+            axis.line.y = ggplot2::element_line(color = "black", linewidth = 0.6),
+            axis.ticks = ggplot2::element_line(color = "black", linewidth = 0.3),
+            legend.position = "right",
+            legend.title = ggplot2::element_text(size = fontSize),
+            legend.text = ggplot2::element_text(size = fontSize),
+            legend.key.height = grid::unit(0.5, "cm"),
+            legend.key.width = grid::unit(0.5, "cm"),
+            plot.margin = ggplot2::margin(5, 5, 5, 5)
+        )
+
+    tableBarPlot <- allData %>%
+        dplyr::select(original_name = ID, label_name = name, !!x, !!alpha, neg_log_alpha, alpha_value)
+    return(list(barPlot = barPlot, tableBarPlot = tableBarPlot))
 }

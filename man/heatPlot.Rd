@@ -5,71 +5,97 @@
 \title{heatPlot}
 \usage{
 heatPlot(
-  SE_data.fgsea,
+  seDataFgsea,
   breaklineN = 30,
   showCategory = 5,
-  dotSize = "pval",
-  dotColor = "cor",
-  distfun = "euclidean",
-  hclustfun = "ward.D"
+  size = "pvalue",
+  color = "cor",
+  disFun = "euclidean",
+  hclustFun = "ward.D",
+  fontSize = 8
 )
 }
 \arguments{
-\item{SE_data.fgsea}{A \code{SummarizedExperiment} object containing GSEA
-results and correlation data. The object must contain:
-\itemize{
-\item \code{metadata(SE_data.fgsea)$gseaResult}: GSEA result object
-\item \code{metadata(SE_data.fgsea)$cor.df}: Correlation data frame with
-gene, correlation, and statistical columns
-}}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results and correlation data. Typically extracted using the internal
+\code{.extractDF()} function with types \code{"gseaReadable"} and
+\code{"corCoef"}.}
 
-\item{breaklineN}{An integer specifying the number of characters after which
-to break pathway names into multiple lines for better readability.
-Default is \code{30}.}
+\item{breaklineN}{Integer. Number of characters after which pathway names are
+line-broken for readability. Default is \code{30}.}
 
 \item{showCategory}{Either a numeric value indicating the number of top
 pathways to display, or a character vector specifying particular pathway
-names to show. Default is \code{5}.}
+names to include. Default is \code{5}.}
 
-\item{dotSize}{A character string specifying which column from the
-correlation data frame to use for dot sizing. Must be one of
-\code{c('pval', 'p.adjust')}. Default is \code{pval}.}
+\item{size}{Character. Column name representing statistical significance
+values for dot sizing. Must be one of \code{"pvalue"} or \code{"p.adjust"}.
+Default is \code{"pvalue"}.}
 
-\item{dotColor}{A character string specifying which column from the
-correlation data frame to use for dot color.}
+\item{color}{Character. Column name representing the color variable for dots.
+Must be one of \code{"cor"} or \code{"log2FC"}. Default is \code{"cor"}.}
 
-\item{distfun}{Character. The distance measure to be used when choosing
-\code{"hclustering"} as clustering method. Allow method include "euclidean",
-"manhattan", "maximum", "canberra", "binary", and "minkowski".}
+\item{disFun}{Character. Distance metric for gene clustering along the
+x-axis, passed to \code{dist()}. Supported options include
+\code{"euclidean"}, \code{"manhattan"}, \code{"canberra"}, etc.
+Default is \code{"euclidean"}.}
 
-\item{hclustfun}{Character. The agglomeration method to be used when choosing
-\code{"hclustering"} as clustering method. This should be (an unambiguous
-abbreviation of) one of "ward.D", "ward.D2", "single", "complete",
-"average" (=UPGMA), "mcquitty" (= WPGMA), "median" (= WPGMC), or "centroid"
-(= UPGMC).}
+\item{hclustFun}{Character. Hierarchical clustering method used for gene
+ordering, passed to \code{hclust()}. Must be one of \code{"ward.D"},
+\code{"ward.D2"}, \code{"average"}, \code{"complete"}, \code{"single"},
+etc. Default is \code{"ward.D"}.}
+
+\item{fontSize}{Numeric. Base font size for axis labels and legends.
+Default is \code{8}.}
 }
 \value{
-A list containing two elements:
+A named list with two elements:
 \describe{
-\item{\code{heatPlot}}{A ggplot2 object representing a dot plot heatmap
-with genes clustered on the x-axis and pathways with formatted
-names on the y-axis. Dots are colored by correlation coefficients
-and sized by statistical significance measures}
-\item{\code{table_heatPlot}}{A data.frame containing the plot data
-with columns: \code{original_name} (original pathway IDs),
-\code{label_name} (formatted pathway names with line breaks),
-\code{Gene} (gene symbols), \code{Coefficient} (correlation
-coefficients), and a column named after the \code{dotSize}
-parameter (statistical significance values used for dot sizing)}
+\item{\code{heatPlot}}{A \code{ggplot2} object showing the gene–pathway
+heatmap with correlation color and significance size encoding.}
+\item{\code{tableHeatPlot}}{A \code{data.frame} summarizing the data used
+in the plot, including:
+\itemize{
+\item \code{original_name}: Original pathway IDs
+\item \code{label_name}: Formatted pathway names with line breaks
+\item \code{Gene}: Gene symbols
+\item \code{Coefficient}: Correlation coefficient or log2FC values
+(depending on the \code{color} parameter)
+\item Statistical significance column: The column specified by the
+\code{size} parameter (\code{pvalue} or \code{p.adjust})
+\item \code{neg_log_size}: Transformed significance value
+(-log10 of the size column)
+}}
 }
 }
 \description{
-The \code{heatplot} function generates a dot plot heatmap for
-visualizing gene set enrichment analysis (GSEA) results. It displays genes
-on the x-axis and pathways on the y-axis, with dots colored by correlation
-coefficients and sized by statistical significance measures.
+The \code{heatPlot} function generates a dot-based heatmap to
+visualize correlations between genes and enriched pathways from Gene Set
+Enrichment Analysis (GSEA) results. Each dot represents a gene–pathway
+relationship, colored by the correlation coefficient (or log2 fold change)
+and sized by statistical significance measures such as p-value or adjusted
+p-value.
+}
+\details{
+This function provides a compact visualization to highlight how individual
+genes contribute to enriched pathways. The heatmap layout displays genes on
+the x-axis (optionally clustered by correlation patterns) and pathways on
+the y-axis. Dot color represents correlation direction/intensity, and dot
+size encodes statistical significance.
+
+Visual encoding follows the SigFun aesthetic design:
+\itemize{
+\item \strong{Dot color:} Correlation coefficient (\code{cor}) or log2FC
+\item \strong{Dot size:} -log10(p-value) or -log10(p.adjust)
+\item \strong{X-axis:} Genes clustered by correlation similarity
+\item \strong{Y-axis:} Pathway names (wrapped by \code{breaklineN})
+}
+}
+\note{
+Requires \pkg{ggplot2} (>= 3.5.0) and \pkg{dplyr} (>= 1.1.0) for full compatibility.
 }
 \examples{
-data("demo_GSE181574")
-heatPlot(SE_data.fgsea=GSE181574.sigfun, showCategory=3)
+data("sig2Fun_result")
+heatPlot(seDataFgsea = sig2Fun_result)
+
 }

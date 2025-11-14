@@ -4,49 +4,103 @@
 \alias{dotPlot}
 \title{dotPlot}
 \usage{
-dotPlot(SE_data.fgsea, showCategory = 10, color = "pvalue", breaklineN = 20)
+dotPlot(
+  seDataFgsea,
+  showCategory = 10,
+  breaklineN = 30,
+  x = "GeneRatio",
+  size = "Count",
+  alpha = "p.adjust",
+  orderBy = "GeneRatio",
+  decreasing = TRUE,
+  fontSize = 10,
+  title = NULL
+)
 }
 \arguments{
-\item{SE_data.fgsea}{A SummarizedExperiment object containing GSEA results.
-The GSEA results should be stored in the metadata slot as 'gseaResult'.}
+\item{seDataFgsea}{A \code{SummarizedExperiment} object containing GSEA
+results. The metadata must include a \code{gseaResult} object with pathway
+information, gene sets, enrichment statistics, and ranking metrics.}
 
-\item{showCategory}{An integer specifying the number of top enriched
-categories to display in the plot, or a character vector of pathway names to
-display specific pathways. Default is 10.}
+\item{showCategory}{Either a numeric value specifying the number of top
+enriched pathways to display, or a character vector specifying particular
+pathway IDs or names. Default is \code{10}.}
 
-\item{color}{A character vector specifying which variable to use for color
-encoding. Must be one of "pvalue", "p.adjust", or "NES" (Normalized
-Enrichment Score). Default is c('pvalue','p.adjust','NES').}
+\item{breaklineN}{Integer. Maximum number of characters before inserting
+line breaks into pathway names for better readability. Default is \code{30}.}
 
-\item{breaklineN}{An integer specifying the number of characters after
-which to break pathway names into multiple lines for better readability on
-the y-axis. Default is \code{20}.}
+\item{x}{Character. Variable to display on the x-axis. Must be one of
+\code{"GeneRatio"}, \code{"Count"}, or \code{"NES"}. Default is
+\code{"GeneRatio"}.}
+
+\item{size}{Character. Variable used to scale dot size. Must be one of
+\code{"Count"} or \code{"GeneRatio"}. Default is \code{"Count"}.}
+
+\item{alpha}{Character. Statistical metric used for transparency encoding.
+Must be one of \code{"pvalue"}, \code{"p.adjust"}, or \code{"qvalue"}.
+Default is \code{"p.adjust"}.}
+
+\item{orderBy}{Character. Column name used to order pathways before plotting.
+Default is \code{"GeneRatio"}.}
+
+\item{decreasing}{Logical. Whether to sort pathways in decreasing order.
+Default is \code{TRUE}.}
+
+\item{fontSize}{Numeric. Base font size for all plot text elements.
+Default is \code{10}.}
+
+\item{title}{Character or \code{NULL}. Custom plot title. If \code{NULL},
+no title is displayed. Default is \code{NULL}.}
 }
 \value{
-A list containing two elements:
+A named list with two components:
 \describe{
-\item{\code{dotPlot}}{A ggplot2 object representing the dot plot with
-GSEA results. The plot includes the title "dotplot for GSEA" and
-shows the selected categories with dots sized by gene count and
-colored by the specified statistical measure (pvalue, p.adjust,
-or NES)}
-\item{\code{Table_dotPlot}}{A tibble/data.frame containing the plot data
-with columns: \code{original_name} (original pathway IDs),
-\code{label_name} (formatted pathway descriptions with line
-breaks),
-\code{Count} (number of genes in each pathway), \code{GeneRatio}
-(ratio of genes in pathway), and a column named after the
-\code{color} parameter containing the values used for color
-encoding}
+\item{\code{dotPlot}}{A \code{ggplot2} object visualizing enriched pathways
+with customizable color, size, and transparency encodings.}
+\item{\code{tableDotPlot}}{A \code{data.frame} containing the plotted data,
+including columns:
+\itemize{
+\item \code{original_name}: Original pathway IDs
+\item \code{Description}: Formatted pathway names (with line breaks)
+\item \code{NES}: Normalized enrichment score
+\item \code{Count}: Number of core genes per pathway
+\item \code{GeneRatio}: Ratio of core genes to set size
+\item Statistical significance column: The column specified by the
+\code{alpha} parameter (\code{pvalue}, \code{p.adjust}, or \code{qvalue})
+}}
 }
 }
 \description{
-This function creates a dot plot visualization for Gene Set
-Enrichment Analysis (GSEA) results stored in a SummarizedExperiment object.
-The plot displays enriched gene sets with customizable visual encoding for
-statistical significance and enrichment scores.
+The \code{dotPlot} function generates a customizable dot plot
+visualization for Gene Set Enrichment Analysis (GSEA) results stored in a
+\code{SummarizedExperiment} object. The plot displays enriched pathways as
+dots positioned by enrichment metrics (e.g., \code{GeneRatio}, \code{Count},
+or \code{NES}) and encoded by color, size, and transparency to represent
+statistical significance and biological importance.
+}
+\details{
+This function extends the visualization of enrichment results beyond the
+default \pkg{enrichplot::dotplot()} by supporting flexible mapping of dot
+color, size, and alpha transparency to different variables.
+
+Dots represent enriched gene sets, where:
+\itemize{
+\item \code{x}-axis: Enrichment metric (e.g., GeneRatio, Count, NES)
+\item \code{Dot size}: Pathway size or gene ratio
+\item \code{Dot color}: Enrichment direction (for NES) or fixed color
+\item \code{Transparency (alpha)}: Statistical significance
+}
+
+Pathways can be selected either by the number of top categories
+(\code{showCategory = 10}) or explicitly by ID/name.
+When \code{x = "NES"}, the plot uses a diverging red–blue palette to
+indicate up- and down-regulated enrichment directions.
+}
+\note{
+Requires \pkg{ggplot2} (>= 3.5.0) for legend customization and margin support.
 }
 \examples{
-data("demo_GSE181574")
-dotPlot(SE_data.fgsea=GSE181574.sigfun)
+data("sig2Fun_result")
+dotPlot(seDataFgsea = sig2Fun_result)
+
 }

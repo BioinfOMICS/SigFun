@@ -1,6 +1,5 @@
 ---
-title: "Analyzing Biological Functions of the Signature with SigFun: A Quick 
-Start"
+title: "QuickStart with Streamlined Workflow"
 package: SigFun
 output:
   BiocStyle::html_document:
@@ -20,61 +19,54 @@ knitr::opts_chunk$set(collapse=TRUE, comment="#>")
 ```
 
 # Introduction
-In the era of precision medicine, biomarker exploration is pivotal. The field 
-has increasingly shifted from single-gene markers to multi-gene signatures, 
-which better capture the complex biological mechanisms underlying disease. 
-However, a comprehensive understanding of the holistic biological function of 
-these signatures remains a significant challenge, limiting severely hinder 
-deeper investigation into the mechanisms driving a signature's predictive power.
 
-To address these challenges, we have developed `SigFun`, an innovative 
-computational framework. SigFun is designed to overcome the shortcomings of 
-existing strategies by leveraging whole-transcriptome data for a systematic 
-analysis of a signature’s function. This approach bypasses the constraints of 
-single-gene interpretation, small gene sets, and arbitrary patient 
-stratification. The tool provides system-level insights into clinically 
-validated yet mechanistically opaque signatures, effectively bridging the 
-critical gap between established utility and biological understanding. 
+Multi-gene signatures are increasingly used in precision medicine to capture complex biological processes and predict patient outcomes. Yet interpreting what a signature actually represents at the functional level remains difficult. Most existing tools are designed for analyzing ranked genes lists or differential expression results, not for directly evaluating a multi-gene signature across a transcriptome. As a result, researchers often fall back on arbitrary sample stratification (e.g., high vs. low groups) or indirect proxies, which can obscure the biology driving a signature's predictive power.
 
-The package one main and several visualization functions:
+**SigFun** was developed to bridge the gap between signature-based analyses and functional interpretation. Instead of requiring users to reshape their data into differential contrasts, SigFun directly computes genome-wide associations between a user-defined signature score (numeric or binary) and every gene in the transcriptome, linking those associations to biological functions.
 
-1. **sig2Fun()** – Performs the core SigFun function to analyze the signature.
-2. **plot_heat()** – Visualizes analysis results with an integrative heatmap.
-3. **barPlot()** – Visualizes analysis results with a bar plot.
-4. **chordPlot()** – Visualizes analysis results with a chord plot.
-5. **cnetPlot()** – Visualizes analysis results with a concept network.
-6. **dotPlot()** – Visualizes analysis results with a dot plot.
-7. **emapPlot()** – Visualizes analysis results with a enrichment map plot.
-8. **gseaPlot()** – Visualizes analysis results with a enrichment score plot.
-9. **heatPlot()** – Visualizes analysis results with a heat plot.
-10. **lollipopPlot()** – Visualizes analysis results with a lollipop plot.
-11. **ridgePlot()** – Visualizes analysis results with a ridge plot.
-12. **treePlot()** – Visualizes analysis results with a tree plot.
-13. **upsetPlot()** – Visualizes analysis results with a UpSet plot.
+The package supports both continuous and binary signatures, applying correlation methods (Spearman, Pearson, or Kendall) or logistic regression as appropriate. This adaptive modeling framework allows users to explore signatures from multiple perspectives—ranking genes by association strength, effect size, variability, clinical relevance, or custom-defined metrics—to reveal richer, context-specific biological insights.
 
-In addition to these core functions, several helper functions are available to 
-facilitate the exploration and extraction of results from the returned object.
+To streamline interpretation, SigFun provides twelve integrated visualization tools, including heatmaps, network diagrams, ridge plots, and tree-based representations. These plots operate directly on analysis outputs, making the workflow from calculation to interpretation seamless and publication-ready. Built on the **SummarizedExperiment** framework, SigFun integrates naturally with Bioconductor workflows, enabling users to move efficiently from upstream data processing to signature interpretation without additional data formatting.
 
-For more details, please refer to the [Helper Functions section](#helper).
+**Key Features Summary**
 
+**SigFun** provides a comprehensive framework for interpreting multi-gene signatures through three core capabilities:
 
-# Installation 
-To install `LipidTrend`, ensure that you have R 4.4.0 or later installed 
-(see the R Project at [http://www.r-project.org](http://www.r-project.org)) 
-and are familiar with its usage.
+1.  **Adaptive association modeling:** Automatically calculates genome-wide gene-signature associations using the appropriate statistical method - correlation-based approaches for continuous signatures or logistic regression for binary classifications.
+2.  **Multi-dimensional gene prioritization:** Stores all association metrics in a structured table (`cor.df`) that users can extend with custom rankings (e.g., effect sizes, variability measures, clinical hazard ratios), enabling exploration of signature function from multiple biological perspectives.
+3.  **Integrated visualization ecosystem:** Offers 12 specialized plotting functions that translate enrichment results into publication-ready figures, supporting diverse analytical needs from pathway networks to distribution comparisons. See the *Visualization Functions vignette* for more details.
+4.  **Standard workflow**: Built on SummarizedExperiment for seamless integration with Bioconductor ecosystem.
 
-`SigFun` package is available on GitHub repository
-[https://github.com/BioinfOMICS/SigFun](https://github.com/BioinfOMICS/SigFun). 
-Before installing `SigFun`, you must first install the core Bioconductor 
-packages. If you have already installed them, you can skip the following step.
+**Note: This QuickStart vignette also demonstrates the *streamlined workflow* (one-call `sig2Fun`) so you can see the fastest path from inputs to interpretable functions.**
+
+# Vignettes at a Glance
+
+-   **QuickStart with Streamlined Workflow** (`sig2Fun`)- Minimal working example *and* a demonstration of the streamlined `sig2Fun` workflow using built-in test data. *Start here to verify installation and understand the basic workflow.*
+
+-   **Data Preparation** - How to build the required `SummarizedExperiment`: expression, `rowData`, `colData`, and `t2g` (with quick validators). *Start here if your data isn’t in SE format yet.*
+
+-   **Stepwise Workflow (`sigCor` → GSEA → plots)** - Runs correlation and enrichment separately so you can inspect/modify `cor.df`, change ranking metrics, or swap enrichment settings. *Use for advanced customization.*
+
+-   **Visualization Functions** - What each SigFun plotting function does (bar, dot, heat, cnet, emap, tree, ridge, lollipop, UpSet, gsea, chord diagram) with concise usage examples. *Use when crafting publication figures.*
+
+-   **Custom Gene Ranking** - Plug in your own gene-level stats (e.g., `log2FC`, `zscore`) by attaching a `cor.df` and setting `ranking.method`. *Use when you already computed rankings externally.*
+
+# QuickStart Workflow (Streamlined)
+
+## Installation & Load Package
+
+To install `SigFun`, ensure that you have R 4.4.0 or later installed (see the R Project at <http://www.r-project.org>) and are familiar with its usage.
+
+`SigFun` package is also available on GitHub repository <https://github.com/BioinfOMICS/SigFun>. Before installing `SigFun`, you must first install the core Bioconductor packages. If you have already installed them, you can skip the following step.
+
 ```{r install_Bioconductor, eval=FALSE}
 if (!requireNamespace("BiocManager", quietly=TRUE))
     install.packages("BiocManager")
 BiocManager::install()
 ```
 
-Once the core Bioconductor packages are installed, you can proceed with 
-installing `SigFun`.
+Once the core Bioconductor packages are installed, you can proceed with installing `SigFun`.
+
 ```{r install_package, eval=FALSE}
 ## Update repositories
 options(repos = c(
@@ -85,284 +77,237 @@ options(repos = c(
 devtools::install_github(
     "BioinfOMICS/SigFun", 
     build_vignettes = TRUE, dependencies = TRUE)
-``` 
+```
 
-After the installation is complete, you’re ready to start using `SigFun`.
-Now, let’s load the package first.
-```{r load, message=FALSE}
+After the installation is complete, you are ready to start using `SigFun`. Now, let’s load the package first.
+
+```{r load_packages, message=FALSE}
 library(SigFun)
 library(dplyr)
+library(DT)
 ```
 
-# Data preparation
-`SigFun` requires a SummarizedExperiment object as input data.
-You can use the helper function `.synchonize_SE` to construct the object by 
-providing your signature data, expression data, and gene ID mapping data.
-Please refer to the [Constructing SummarizedExperiment object](#ConstructSE).
+## Quick Setup Checklist
 
-This S4 object must contain the following components:
+-   **Input container:** a `SummarizedExperiment` (SE) with
 
-1. **Assay**: A numeric matrix representing gene expression values, 
-where each row corresponds to a gene and each column to a sample. 
-Please ensure the values meet the following requirements:
-    
-    * Preprocessing required: Before using `SigFun`, the abundance data
-    must undergo preprocessing to address missing or noisy values. This
-    preprocessing should include filtering, imputation, and normalization.
-    * Value constraints: Zero values are acceptable; however, character value
-    ("NULL") are not supported and must be handled during preprocessing.
-    
-2. **RowData**: A data frame containing gene ID information 
-(e.g. ensg_id, gene_symbol, gene_biotype), where each row corresponds to a gene 
-and each column to a specific gene information
+    -   `assay$abundance`: genes x samples expression matrix (numeric; no columns or rows should contain all values of `NA`)
 
-    * The number and order of rows must exactly match those in the abundance 
-    matrix (Assay).
-    * This component must include at least the three columns:
-        * `ensg_id`: ENSG ID.
-        * `gene_symbol`: official gene symbol.
-        * `gene_biotype`: annotate the gene is protein coding or not.
+    -   rowData: gene annotations (must align row-order with `assays`)
 
-3. **ColData**: A data frame containing signature score for each sample.
+    -   colData: sample metatdata (includes your signature columns[s])
 
-    * Each row must correspond to a sample, matching the column order of 
-    the Assay matrix.
-    * The columns are required to be arranged accordingly:
-        * `sample_id`: A unique identifier for each sample.
-        * `value`: A signature score (numeric or binary).
+-   **Ontology:** a two-column `t2g` data.frame with `gs_name`, `ensembl_gene` (ID type should match `rowData$ensg_id`). (For setup, refer to [Ontology Database Setup])
 
-If you are already familiar with constructing a SummarizedExperiment object, 
-you can skip the following section. Otherwise, refer to the example in the rest 
-of this section to learn how to build a SummarizedExperiment object.
+-   **Method selection:**
 
-## Assay: expression data
-The expression data is a matrix containing gene expression values across genes 
-and samples, where rows represent genes and columns represent samples.
-```{r expression}
-data("demo_GSE181574")
+    -   numeric signature → `cor.method = "spearman"` (default) or `"pearson"/"kendall"`
 
-# view the expression data of the demo dataset
-expr.data %>%
-    DT::datatable(
-        options = list(pageLength = 10, scrollX = TRUE)
-    )
+    -   binary signature (0/1) → `cor.method = "logit"`
+
+## Load Demo Data
+
+```{r load_demo_data}
+# Demo resources bundled with SigFun
+data("expr.data") # expression matrix (genes × samples)
+data("mapping") # gene annotations with Ensembl IDs
+data("SIG_MAT") # sample metadata incl. demo signatures
+data("t2g") # ontology (TERM2GENE)
 ```
 
-## RowData: gene ID information data
-The gene IF table is a data frame containing information about 
-each gene , such as the number of double bonds and chain 
-length. 
-The order of the gene in this table must align with the expression data.
-The table must have at least the following three columns:
-    * ensg_id: ENSG ID.
-    * gene_symbol: official gene symbol.
-    * gene_biotype: annotate the gene is protein coding or not.
+## Build a `SummarizedExperiment`
 
-In this example, we demonstrat gene ID information data in the demo dataset.
-```{r char_table}
-# view gene information data
-mapping %>%
-    DT::datatable(
-        options = list(pageLength = 10, scrollX = TRUE)
-    )
+**Note:** See the *Data Preparation vignette* for more details.
+
+```{r build_a_summarizedExperiment}
+SE_demo <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(abundance = as.matrix(expr.data)),
+  rowData = S4Vectors::DataFrame(mapping, row.names = mapping$ensg_id),
+  colData = S4Vectors::DataFrame(SIG_MAT)
+)
+
+SE_demo
 ```
 
-## ColData: patient signature data
-The patient signature data is a data frame containing signature score 
-corresponding to the samples in the gene expression data. It must adhere to the 
-following requirements:
+**Sanity checks (optional but recommended)**
 
-1. The columns must be arranged in the following order: `sample_id` and `value`.
-2. All sample names must be unique.
-3. The sample names in the `sample_id` column must match those in the lipid 
-abundance data.
-4. The columns `sample_id` and `value` must not contain missing values (NA).
-
-For example:
-```{r groupInfo}
-# view group information table
-SIG_MAT %>%
-    DT::datatable(
-        options = list(pageLength = 10, scrollX = TRUE)
-    )
+```{r sanity_checks}
+stopifnot(
+  is.matrix(SummarizedExperiment::assay(SE_demo, "abundance")),
+  is.numeric(SummarizedExperiment::assay(SE_demo, "abundance")),
+  # No rows should be entirely NA
+  all(rowSums(is.na(SummarizedExperiment::assay(SE_demo, "abundance"))) < ncol(SummarizedExperiment::assay(SE_demo, "abundance"))),
+  # No columns should be entirely NA
+  all(colSums(is.na(SummarizedExperiment::assay(SE_demo, "abundance"))) < nrow(SummarizedExperiment::assay(SE_demo, "abundance"))),
+  # Row names must match ensg_id column
+  all(rownames(SummarizedExperiment::rowData(SE_demo)) == SummarizedExperiment::rowData(SE_demo)$ensg_id),
+  # Column names must match sample identifiers in colData
+  all(colnames(SummarizedExperiment::assay(SE_demo, "abundance")) == rownames(SummarizedExperiment::colData(SE_demo))),
+  # Dimensions must match
+  nrow(SummarizedExperiment::assay(SE_demo, "abundance")) == nrow(SummarizedExperiment::rowData(SE_demo)),
+  ncol(SummarizedExperiment::assay(SE_demo, "abundance")) == nrow(SummarizedExperiment::colData(SE_demo))
+)
 ```
 
-## Constructing SummarizedExperiment object {#ConstructSE}
-Once the expression data, gene information data, and patient signature data are 
-prepared, we can construct the input SummarizedExperiment object. 
-We will use the `SummarizedExperiment` function from 
-`r Biocpkg("SummarizedExperiment")`. 
+## (Optional) Use a Custom Ranking
 
-Follow the command below to create this object.
-```{r build_se}
-# If your data is organized and ordered as the requirement,
-# you can use the generic function of SummarizedExperiment.
-SE_data <- SummarizedExperiment::SummarizedExperiment(
-    assays=list(abundance=as.matrix(expr.data)),
-    rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
-    colData=S4Vectors::DataFrame(SIG_MAT))
+If you already computed a metric (e.g., `log2FC`, `zscore`), attach it as `metadata(SE)$cor.df` and point `ranking.method` to that column.
 
-# Check it
-show(SE_data)
+**Note:** See the *Custom Gene Ranking vignette* for more details.
+
+```{r custom_ranking, eval=FALSE}
+# This following codes are not ran. Use your own metrics.
+custom <- S4Vectors::metadata(SE_demo)$cor.df    # Use your own metric
+# Example: create a signed –log10 p
+custom <- cor.df %>% dplyr::mutate(signed_logp = sign(cor) * -log10(pval))
+S4Vectors::metadata(SE_demo)$cor.df <- custom
+
+SE_res2 <- sig2Fun(SE_demo, t2g = t2g, rankingMethod = "signed_logp", strings = "KEGG")
 ```
 
-# Initiate SigFun workflow
+## (Optional) Speed up with KEGG (used only for demonstration)
 
-The `SigFUn` workflow starts with a SummarizedExperiment object as input. 
-It supports both numeric and binary (1/0) signature input.
-
-Based on the type of signature input, we should choose different methods in 
-`sig2Fun`:
-
-* Numeric: cor.method="spearman"(default) or "pearson" or "kendall"
-* Binary: cor.method="logit" (univarite logistic regression).
-
-This streamlined workflow enables researchers to identify biological functions 
-associated with signature with biological interpretability.
-
-## Load demo dataset {#sig2Fun}
-To begin, we will first examine the structure of the example input data to 
-ensure it is correctly formatted for SigFun analysis.
-
-```{r demo_GSE181574}
-# load example data
-data("demo_GSE181574")
-GSE181574.sigfun <- SummarizedExperiment::SummarizedExperiment(
-    assays=list(abundance=as.matrix(expr.data)),
-    rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
-    colData=S4Vectors::DataFrame(SIG_MAT))
-
-# quick look of SE structure
-show(GSE181574.sigfun)
-
-# one-click function for the signature analysis
-# The signature in this demo is a binary(1/0) classification signature.
-GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
-    t2g=t2g,
-    cor.method = "logit", 
-    strings=c("GOBP","HALLMARK","SIGNALING"))
-
-show(GSE181574.sigfun.res)
+```{r subset_t2g_to_kegg_terms}
+# Smaller ontology for quick runs
+t2g_kegg <- t2g %>% 
+  dplyr::filter(grepl("^KEGG", gs_name)) %>% 
+  dplyr::distinct(gs_name, ensembl_gene)
+length(unique(t2g_kegg$gs_name))
 ```
 
-## Analyze Signature profile: Run sig2Fun With the Object You Build
-**Overview of SigFun Analysis**
-The `sig2Fun` function analyzes the gene signature and identifies their 
-associated biological functions by using the whole transcriptome as a surrogate.
-It can handle signatures in various formats including binary values (e.g.,  
-high/low risk classifications) and continuous values (e.g., prognostic risk 
-scores).
+## Run `sig2Fun()`
 
-The ontology database `t2g`(ontology term to gene) is provided in the demo set.
-It can be applied in most analysis cases using human samples, please refer to 
-[Help Note section](#helper).
+Choose `cor.method` based on your signature type. The demo data has binary signatures, thus, we will use `"logit"` to calculate genome-wide associations.
 
-**Note:**  
-- If `cor.method=spearman` (default), the function performs Spearman rank 
-correlation between signature and gene expression profile. <br>
-- If `cor.method=logit`, the function performs logistic regression analysis.<br>
-<br>
+**Method selection options:**
 
-**Recommendation:**
-Set `split_chain=spearman` when analyzing signature in numeric/integer value.
-Set `split_chain=logit` when analyzing signature in binary (1/0) value.
+-   **Numeric signatures:** `cor.method = "spearman"` (default), `"pearson"`, or `"kendall"`
 
-```{r sig2Fun, warning=FALSE, eval=FALSE}
-library(SigFun)
-library(dplyr)
+-   **Binary Signatures:** `cor.method = "logit"`
 
-# Run sig2Fun with the object you build
-GSE181574.sigfun.res <- sig2Fun(GSE181574.sigfun,
-    cor.method = "logit", 
-    t2g = t2g, # the ontology dataset
-    strings=c("GOBP","GOCC","GOMF","KEGG", 
-            "REACTOME","WP","HALLMARK","SIGNALING"))
+**Important Note:** The `strings` parameter in `sig2Fun()` controls which **heatmaps** are automatically generated, not which database are analyzed. In this example, we have already restricted `t2g` to **KEGG**, so all enrichment results correspond exclusively to KEGG pathways regardless of the value of `strings`.
 
-# view the result summary 
-show(GSE181574.sigfun.res)
+```{r run_streamlined_function, fig.alt="Heatmap of KEGG signature activity across samples produced by sig2Fun()"}
+SE_res <- sig2Fun(
+  SE_demo,
+  t2g = t2g_kegg, # use KEGG subset here
+  corMethod = "logit", # for binary signatures
+  strings = c("KEGG") # used for heatmap plotting
+)
 ```
 
-## Gene Set Enrichment Analysis Result
-```{r GSEA_result, warning=FALSE}
-# GSEA result table
-GSEA_result <- GSE181574.sigfun.res@metadata$gseaResult@result 
+**Under the hood objects**
 
-# view top 10 functions positively (up-regulated) related to the signature
-GSEA_result %>% dplyr::slice(grep("GOBP",GSEA_result$ID)) %>%
-    dplyr::arrange(desc(NES)) %>%
-    dplyr::select(ID, Description, NES, pvalue, p.adjust, qvalue) %>%
-    DT::datatable(
-        options = list(pageLength = 10, scrollX = TRUE)
-    )
-
-# view top 10 functions negatively (down-regulated) related to the signature
-GSEA_result %>% dplyr::slice(grep("GOBP",GSEA_result$ID)) %>%
-    dplyr::arrange(NES) %>%
-    dplyr::select(ID, Description, NES, pvalue, p.adjust, qvalue) %>%
-    DT::datatable(
-        options = list(pageLength = 10, scrollX = TRUE)
-    )
+```{r other_objects}
+cor.df <- S4Vectors::metadata(SE_res)$cor.df
+GSEA_result <- S4Vectors::metadata(SE_res)$gseaResult
+head(cor.df)
 ```
 
-## Gene Set Enrichment Analysis Result Visualization
-This section demonstrates how to visualize the results from the `sig2Fun` 
-object returned by the `plot_heat()` function.
+## View Results
 
-```{r plot heatmap}
-# plot result
-All_heatmaps <- GSE181574.sigfun.res@metadata$heatmap
+**Correlation Table**
 
-# heatmap of GO Biological Function ontology
-All_heatmaps$GOBP
-# heatmap of HALLMARK ontology
-All_heatmaps$HALLMARK
-# heatmap of SIGNALING pathways
-All_heatmaps$SIGNALING
+```{r Correlation table}
+# GSEA table preview
+S4Vectors::as.data.frame(GSEA_result) %>%
+  dplyr::select(ID, Description, NES, pvalue, p.adjust, qvalue) %>%
+  DT::datatable(options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
 ```
 
-The visualization illustrates the most significant functions 
-associated with the signature and includes the following components:
+**Top Pathways by NES**
 
-1. **Carplot (left)** – Visualization of NES values.
-2. **NES (middel-left)** – The statistics analysis results: NES with p-value.
-3. **Enrichment plot (middel-right)** – The distribution of genes of the 
-function among the whole transcriptome.
-4. **Function name (right)** – The official name of the function.
+```{r Top Pathways by NES}
+GSEA_df <- S4Vectors::as.data.frame(GSEA_result)
+# Top positively associated
+GSEA_df %>% 
+  dplyr::filter(grepl("KEGG", ID)) %>% 
+  dplyr::arrange(dplyr::desc(NES)) %>%
+  dplyr::select(ID, Description, NES, pvalue, p.adjust) %>%
+  DT::datatable(options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+# Top negatively associated
+GSEA_df %>% 
+  dplyr::filter(grepl("KEGG", ID)) %>% 
+  dplyr::arrange(NES) %>%
+  dplyr::select(ID, Description, NES, pvalue, p.adjust) %>%
+  DT::datatable(options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+```
 
-**For more visualization, refer to the vignette: Customized Visualization 
-functions in SigFun.** Twelve distinct visualization options are available to 
-enable the inspection and interpretation of results from various analytical 
-viewpoints.
+**Heatmap Visualization**
 
-# Help Note –  {#helper}
-## Prepare the ontology dataset
-``` {r t2g_prepare, warning=FALSE, eval=FALSE}
+```{r heatmap}
+# Access precomputed heatmaps (keys follow the 'strings' you provided)
+All_heatmaps <- S4Vectors::metadata(SE_res)$heatmap
+All_heatmaps$KEGG
+```
+
+| **Interpreting the Heatmap**
+| The heatmap displays the most significant pathways associated with your signature, organized into four panels:
+| **1. NES Barplot (left)** – Shows the strength and direction of pathway enrichment (positive = up-regulated, negative = down-regulated)
+| **2. Statistical Summary (middle-left)** – Lists NES values with corresponding p-values
+| **3. Enrichment Plot (middle-right)** – Shows how pathway genes are distributed across the ranked gene list (standard GSEA plot)
+| **4. Pathway Names (right)** – Official pathway descriptions
+
+**Additional Visualizations**: Beyond the default heatmap, SigFun includes 11 other plot types (dot plots, networks, ridge plots, etc.) for exploring results from different perspectives. The results object returned by `sig2Fun()` can be directly used to generate these additional visualizations. See the *Visualization Functions* vignette for examples.
+
+# Workflow Overview
+
+A **SigFun analysis** links a gene signature to its underlying biology through four main stages, from raw expression data to interpretable functional output. The framework is built to accommodate both rapid exploration and detailed customization.
+
+## Core Analysis Stages
+
+1.  **Data Input** - Provide a `SummarizedExperiment` containing:
+    -   an expression matrix (`assay`)
+    -   feature metadata (`rowdata`)
+    -   sample metadata (`colData`) with the signature variable of interest.
+2.  **Association Calculation** - SigFun computes genome-wide associations between each gene and the signature score, generating a comprehensive correlation table (`cor.df`).
+    -   Continuous signatures → correlation (Spearman/Pearson/Kendall)
+    -   Binary signatures → logistic regression
+3.  **Functional Enrichment** — The ranked gene list (based on association strength or a custom ranking metric) is tested against pathway databases to identify functions enriched in signature-associated genes.
+4.  **Visualization & Interpretation** — Explore and summarize results using 12 integrated visualization functions: pathway networks, heatmaps, ridge plots, lollipop plots, chord diagrams, and more.
+
+## Two Execution Modes
+
+SigFun can be run in two ways depending on your needs:
+
+| Mode | Description | When to Use |
+|------------------------|------------------------|------------------------|
+| Streamlined | Runs association → enrichment → plotting in one step. Automatically produces ranked tables and core visualizations. | Most users; fast exploration or validation runs |
+| Stepwise | Runs each stage separately, allowing inspection or modification of intermediate results (e.g., adding custom ranking metrics, using alternative enrichment methods). | Advanced customization, benchmarking, or method development |
+
+**Note:** This QuickStart vignette uses the **streamlined** mode.
+
+# Appendices
+
+## Ontology Database Setup
+
+```{r t2g_prepare, warning=FALSE, eval=FALSE}
 # Prepare gene ontology data. We strongly recommend MsigDB.
 # The following code can help you to 
 if (!require(msigdbr, quietly = TRUE)) {
-    install.packages("msigdbr")
-    library(msigdbr)
+  install.packages("msigdbr")
+  library(msigdbr)
 }
 # Download human HALLMARKER ontology information
 H_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "H") %>% 
-    dplyr::select(gs_name, ensembl_gene)
+  dplyr::select(gs_name, ensembl_gene)
 
 # Download human C2 pathway information
 C2_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C2") %>% 
-    dplyr::filter(gs_subcat %in% c("CP:BIOCARTA","CP:KEGG_MEDICUS",
-                                   "CP:REACTOME","CP:WIKIPATHWAYS")) %>% 
-    dplyr::select(gs_name, ensembl_gene)
+  dplyr::filter(gs_subcat %in% c("CP:BIOCARTA","CP:KEGG_MEDICUS",
+      "CP:REACTOME","CP:WIKIPATHWAYS")) %>% 
+  dplyr::select(gs_name, ensembl_gene)
 # Download human C5 ontology information
 C5_t2g <- msigdbr::msigdbr(species = "Homo sapiens", category = "C5") %>% 
-    dplyr::filter(gs_subcat %in% c("GO:BP","GO:CC","GO:MF")) %>% 
-    dplyr::select(gs_name, ensembl_gene)
+  dplyr::filter(gs_subcat %in% c("GO:BP","GO:CC","GO:MF")) %>% 
+  dplyr::select(gs_name, ensembl_gene)
 
 # Combine them
 t2g <- rbind(H_t2g, C2_t2g, C5_t2g)
-
 ```
 
-# Session info
+## Session Information
+
 ```{r sessionInfo, echo=FALSE}
 sessionInfo()
 ```

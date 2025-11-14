@@ -1,0 +1,500 @@
+---
+title: "Visualization Functions"
+package: SigFun
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Visualization Functions}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r style, echo=FALSE, results='asis'}
+BiocStyle::markdown(css.files = c('custom.css'))
+knitr::opts_chunk$set(collapse=TRUE, comment="#>")
+```
+
+# Introduction
+
+This guide helps you **choose and customize** figures for interpreting
+GSEA results produced within **SigFun**.\
+For full workflows, see:
+
+-   **QuickStart** — built-in analysis (`sig2Fun()`)
+-   **Stepwise Analysis** — custom analysis pipeline
+-   **Data Preparation** — detailed input formatting
+-   **Custom Gene Ranking** — use your own ranking metric before
+    enrichment
+
+# Prerequisites
+
+Before plotting, ensure you have:
+
+-   A **`SummarizedExperiment`** object with compatible data and
+    metadata\
+-   The **GSEA result** and **correlation table** already added
+    (automatically if you used `sig2Fun()`)
+
+Below shows the **minimal code** to prepare the final `SE_res` object
+for plotting using the built-in pipeline.
+
+```{r prerequisites}
+# Load required packages
+library(SigFun)
+library(dplyr)
+library(ggplot2)
+
+# Load demo data
+data("expr.data", "mapping", "SIG_MAT", "t2g")
+
+# Subset to KEGG and GOCC only (speeds up demo)
+t2g_kegg_gocc <- t2g %>%
+  dplyr::filter(grepl("^KEGG|^GOCC", gs_name)) %>%
+  dplyr::distinct(gs_name, ensembl_gene)
+
+# Construct SummarizedExperiment
+SE_data <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(abundance = as.matrix(expr.data)),
+  rowData = S4Vectors::DataFrame(mapping, row.names = mapping$ensg_id),
+  colData = S4Vectors::DataFrame(SIG_MAT)
+)
+
+# Run built-in SigFun analysis (see QuickStart for details)
+SE_res <- sig2Fun(
+  SE_data,
+  corMethod = "logit",
+  t2g = t2g_kegg_gocc,
+  strings = c("KEGG", "GOCC")
+)
+```
+
+# Visualization Functions (12)
+
+All visualization functions in this vignette take a
+`SummarizedExperiment` object containing GSEA results. Each function
+provides a different perspective on enriched pathways, from overview
+summaries to detailed gene-level visualizations.
+
+1.  `plot_heat()` — Integrative multi-panel heatmap summarizing pathways
+    by NES, p-values, and enrichment curves.
+
+2.  `barPlot()` — Bar chart ranking top enriched pathways by
+    significance or enrichment score.
+
+3.  `chordPlot()` — Circular diagram linking genes to enriched pathways
+    to show shared and unique memberships.
+
+4.  `cnetPlot()` — Category–gene network visualizing shared genes and
+    connectivity among pathways.
+
+5.  `dotPlot()` — Dot chart encoding significance and gene ratio across
+    pathways.
+
+6.  `emapPlot()` — Enrichment map network showing similarity between
+    pathways based on shared genes.
+
+7.  `gseaPlot()` — Per-pathway running enrichment score curve with
+    ranked gene metrics.
+
+8.  `heatPlot()` — Simple gene × pathway dot heatmap encoding
+    correlation and significance.
+
+9.  `lollipopPlot()` — NES-oriented lollipop chart comparing enrichment
+    magnitude and direction.
+
+10. `ridgePlot()` — Ridge density plot showing gene ranking
+    distributions within each pathway.
+
+11. `treePlot()` — Hierarchical clustering tree grouping pathways by
+    gene overlap or similarity.
+
+12. `upsetPlot()` — UpSet diagram illustrating intersections of genes
+    among enriched pathways.
+
+All visualization functions in this vignette take a
+**SummarizedExperiment** object containing GSEA results. Each function
+provides a different perspective on enriched pathways, from overview
+summaries to detailed gene-level visualizations.
+
+**Note:** The following descriptions may not include all parameters in
+each function. For details on available parameters and customization
+options, refer to the function’s help page (e.g., `?barPlot` or
+`help("barPlot")`).
+
+## Integrative Heatmap — `plot_heat()` {#plot_heat}
+
+The integrative heatmap illustrates the comprehensive overview of
+enriched pathways across databases or keyword groups. Each panel
+displays NES bars, enrichment curves, p-values, and pathway labels —
+ideal for comparing multiple functional categories.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing pathway-level GSEA results. |
+| `pathwaysAll` (required) | List of pathway-gene mappings used to define the panels. |
+| `strings` | Keywords or database names (e.g., `"KEGG"`, `"HALLMARK"`) to group panels. |
+| `rankingMethod` | Gene-level statistic used for ranking (`"cor"` or other). |
+| `significantType` | Statistical metric for filtering significance (`"pval"` or `"padj"`). |
+| `topN` | Number of top enriched pathways to display per panel. |
+| `pvalueType` | Statistical metric used to represent the values in significance panel. |
+
+Before generating the heatmap, prepare a pathway list mapping each
+pathway to its member genes:
+
+```{r prepare_pathway_list}
+# Create named list of pathways with their genes
+pathways.all <- setNames(
+  lapply(unique(t2g_kegg_gocc$gs_name), function(x){
+    t2g_kegg_gocc %>% 
+      dplyr::filter(gs_name == x) %>% 
+      dplyr::pull(ensembl_gene)
+  }), 
+  nm = unique(t2g_kegg_gocc$gs_name)
+)
+```
+
+Then, use `plot_heat()` with `pathways.all`.
+
+```{r kegg_and_gocc_heatmap, warning=FALSE, fig.width=8, fig.height=5.5, out.width="80%"}
+# Panel: KEGG & GOCC
+a_hm <- plot_heat(
+  seDataFgsea = SE_res,
+  pathwaysAll = pathways.all,
+  strings = c("KEGG", "GOCC"),      # Users can also add other databases to plot accordingly
+  rankingMethod = "cor",   # Default is `cor` if streamlined workflow was ran
+  significantType = "pval",
+  topN = 10, 
+  pvalueType = "pvalue"
+)
+a_hm$KEGG
+a_hm$GOCC
+```
+
+```{r signaling_heatmap, warning=FALSE, fig.width=8, fig.height=5, out.width="80%"}
+# Keyword focus (e.g., signaling)
+sig_hm <- plot_heat(
+  seDataFgsea = SE_res, 
+  pathwaysAll = pathways.all, 
+  strings = c("SIGNALING")
+)
+
+sig_hm$SIGNALING
+```
+
+## Bar Plot — `barPlot()`
+
+The bar plot displays the top enriched pathways ranked by **NES** by
+default, with bar opacity representing **−log10(p-value)** by default to
+highlight the most enriched categories. The plotting function also
+supports using alternative variables for the x-axis and opacity.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing pathway-level GSEA results. |
+| `x` | Variable on the x-axis (`"NES"`, `"Count"`, or `"GeneRatio"`). |
+| `alpha` | Statistical significance metric used for opacity (`"pvalue"`, `"p.adjust"`, `"qvalue"`). |
+| `topN` | Number of pathways to plot. |
+
+```{r bar_plot, warning=FALSE, fig.width=8, fig.height=5.5, out.width="80%"}
+library(ggplot2)
+res.bar <- barPlot(
+  seDataFgsea = SE_res,
+  x = "NES",
+  alpha = "pvalue",
+  breaklineN = 45
+)
+# table: res.bar$tableBarPlot
+res.bar$barPlot
+```
+
+## Chord Diagram — `chordPlot()`
+
+The chord diagram Illustrates relationships between genes and their
+enriched pathways from GSEA results. In this visualization, genes and
+pathways are arranged as nodes around a circle, with connecting arcs
+representing gene–pathway associations. This provides an intuitive
+overview of shared and unique genes among pathways.
+
+| Essential Parameters     | Description                                |
+|--------------------------|--------------------------------------------|
+| `seDataFgsea` (required) | GSEA results with gene-to-pathway mapping. |
+| `showCategory`           | Number or names of pathways to include.    |
+
+```{r chord_diagram, warning=FALSE}
+res.chord <- chordPlot(
+  seDataFgsea = SE_res,
+  showCategory = 2,
+  breaklineN = 30, 
+  fontSize = 0.5
+)
+# table: res.chord$tableChordPlot
+res.chord$chordPlot
+```
+
+## Concept Network — `cnetPlot()`
+
+The concept network visualizes gene–pathway relationships as a network,
+showing overlap and connectivity between functional categories. Nodes
+represent pathways and genes, while edges indicate membership
+relationships. Optional color coding based on gene expression
+correlation values highlights differential trends. This visualization
+helps identify hub genes shared across multiple pathways and reveals the
+interconnected structure of enriched gene sets.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing GSEA and optionally gene-level correlation data. |
+| `showCategory` | Number or names of pathways to include. |
+| `nodeLabel` | Variable to label the node. |
+| `color` | Column name for coloring genes (e.g., `"cor"` or `"log2FC"`). |
+
+```{r concept_network, warning=FALSE}
+res.cnet <- cnetPlot(
+  seDataFgsea = SE_res,
+  showCategory = 5,
+  nodeLabel = 'category',
+  color = "cor",
+  fontSize = 1.2,
+  breaklineN = 30
+)
+# tables: res.cnet$tableEdgeCnetPlot, res.cnet$tableNodeCnetPlot
+res.cnet$cnetPlot
+```
+
+## Dot Plot — `dotPlot()`
+
+The dot plot displays enriched pathways using dot size (gene
+count/ratio) and color (significance or NES) for compact multi-encoding
+visualization.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing GSEA results. |
+| `showCategory` | Number or specific pathways to show. |
+| `x` | X-axis variable (`"GeneRatio"`, `"Count"`, `"NES"`). |
+| `size` | Variable controlling dot size (`"Count"` or `"GeneRatio"`). |
+| `alpha` | Variable mapped to color/transparency (`"pvalue"`, `"p.adjust"`, `"qvalue"`). |
+
+```{r dot_plot, warning=FALSE}
+res.dot <- dotPlot(
+  seDataFgsea = SE_res,
+  showCategory = 10,
+  x = "GeneRatio",
+  size = "Count",
+  alpha = 'pvalue',
+  breaklineN = 20
+)
+# table: res.dot$tableDotPlot
+res.dot$dotPlot
+```
+
+## Enrichment Map — `emapPlot()`
+
+The enrichment map function generates an intuitive overview of the
+functional landscape. It clusters related biological processes and
+highlights pathway relationships based on shared genes. In this
+network-based visualization, pathways are represented as nodes connected
+by edges, where edge thickness reflects the degree of similarity between
+pathways.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing pairwise pathway similarity. |
+| `showCategory` | Number or names of pathways to include. |
+| `color` | Node color variable (`"pvalue"`, `"p.adjust"`, or `"qvalue"`). |
+| `minEdge` | Minimum pathway similarity required for drawing an edge in the network. |
+
+```{r enrichment_map, warning=FALSE}
+res.ema <- emapPlot(
+  seDataFgsea = SE_res, 
+  showCategory = 10, 
+  color = "p.adjust",
+  minEdge = 0.2
+)
+# table: res.ema$tableEmapPlot
+res.ema$emapPlot
+```
+
+## Enrichment Score — `gseaPlot()`
+
+The enrichmnet score function plots the running enrichment score, ranked
+gene positions, and statistical metrics for selected gene sets. It
+provides a detailed view of how individual genes contribute to the
+overall enrichment signal within a pathway. This function wraps
+`enrichplot::gseaplot2`, streamlining the generation of enrichment score
+visualizations.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment with GSEA running-score data. |
+| `showCategory` | Number or names of pathways to include. |
+| `ESgeom` | Geometry for enrichment curve (`"line"` or `"dot"`). |
+| `subPlots` | Numeric integer between 1 to 3 to decide which subplots to display (`1` = running score, `2` = gene ticks, `3` = ranked list). |
+
+```{r enrichment_score, warning=FALSE, fig.width=8, fig.height=5.5, out.width="90%"}
+gseaPlot(seDataFgsea = SE_res, showCategory = 5)
+```
+
+## Simple Dot Heatmap — `heatPlot()`
+
+The simple dot heatmap displays gene–pathway associations as a dot
+matrix where color encodes correlation coefficient and size encodes
+statistical significance measures.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment with gene-level statistics. |
+| `showCategory` | Number or names of pathways to display. |
+| `color` | Column for dot color (`"cor"` or `"log2FC"`). |
+| `size` | Column for dot size (`"pvalue"` or `"p.adjust"`). |
+
+```{r simple_dot_heatmap, warning=FALSE, fig.width=9.5}
+res.heat <- heatPlot(
+  seDataFgsea = SE_res,
+  breaklineN = 30,
+  size = 'pvalue',
+  color = 'cor'
+)
+# table: res.heat$tableHeatPlot
+res.heat$heatPlot
+```
+
+## Lollipop Plot — `lollipopPlot()`
+
+The lollipop plot displays normalized enrichment scores (or another
+chosen metric) as horizontal lollipop bars, allowing quick comparison of
+pathway direction, magnitude, and significance. The plotting function
+also supports using alternative variables for the x-axis and opacity.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing pathway-level statistics. |
+| `showCategory` | Number or names of pathways to show. |
+| `x` | Variable mapped to the x-axis (`"NES"`, `"Count"`, `"GeneRatio"`). |
+| `alpha` | Statistic controlling transparency (`"pvalue"`, `"p.adjust"`, `"qvalue"`). |
+| `size` | Variable for dot size (`"Count"` or `"GeneRatio"`). |
+
+```{r lollipop_plot, warning=FALSE, fig.width=8, fig.height=6.5, out.width="80%"}
+res.lolli <- lollipopPlot(
+  seDataFgsea = SE_res,
+  x = "NES",
+  alpha = "p.adjust",
+  size = "Count"
+)
+# table: res.lolli$tableLollipopPlot
+res.lolli$lollipopPlot
+```
+
+## Ridge Plot — `ridgePlot()`
+
+The ridge plot shows the distribution of gene expression values (or
+ranking metrics) for each enriched pathway. Each ridge represents a gene
+set, with the curve shape reflecting the distribution of its member
+genes along the ranked gene list. This visualization provides an
+intuitive way to compare enrichment patterns across multiple pathways.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment containing ranked gene statistics. |
+| `showCategory` | Number or names of pathways to include. |
+| `fill` | Variable mapped to ridge fill color (`"pvalue"`, `"p.adjust"`, `"qvalue"`). |
+
+```{r ridge_plot, warning=FALSE}
+res.ridge <- ridgePlot(
+  seDataFgsea = SE_res, 
+  showCategory = 10, 
+  fill = "p.adjust",
+  breaklineN = 30
+)
+# table: res.ridge$tableRidgePlot
+res.ridge$ridgePlot
+```
+
+## Tree — `treePlot()`
+
+The tree plot function generates a hierarchical clustering tree
+(dendrogram) that groups enriched pathways based on gene overlap or
+similarity. This visualization helps reveal functional relationships and
+cluster structures among pathways. Each branch represents a group of
+related pathways, while node colors can encode statistical significance
+or other enrichment metrics. The function offers flexible control over
+clustering methods, label formatting, highlighting, and layout
+parameters for clear and customizable visualizations.
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment with pathway-level enrichment results. |
+| `showCategory` | Number or names of pathways to include. |
+| `dotColor` | Variable used to color pathway nodes (`"pvalue"`, `"p.adjust"`, `"NES"`). |
+
+```{r tree_plot, warning=FALSE}
+res.tree <- treePlot(
+  seDataFgsea = SE_res, 
+  showCategory = 10, 
+  dotColor = 'pvalue'
+)
+# table: res.tree$tableTreePlot
+res.tree$treePlot
+```
+
+## UpSet Plot — `upsetPlot()`
+
+The upset plot visualizes gene overlap among multiple enriched pathways
+using an UpSet layout. The lower intersection matrix indicates which
+pathways contribute to each gene-set combination, while the upper panel
+summarizes each intersection either as a **boxplot** of correlation
+coefficients or a **bar chart** of set sizes (controlled by
+`type = "box"` or `"bar"`).
+
+| Essential Parameters | Description |
+|------------------------------------|------------------------------------|
+| `seDataFgsea` (required) | SummarizedExperiment with pathway-gene relationships. |
+| `showCategory` | Number or names of pathways to include. |
+| `type` | Type of top summary plot (`"box"` or `"bar"`). |
+
+```{r upset_plot, warning=FALSE}
+res.upset <- upsetPlot(
+  seDataFgsea = SE_res, 
+  showCategory = 5, 
+  breaklineN = 30, 
+  type = "box"
+)
+# table: res.upset$tableUpsetPlot
+res.upset$upsetPlot
+```
+
+# Visualization Decision Guide
+
+This section shows what each SigFun plotting function does, what it
+needs, and how to use it quickly and consistently. Below is a
+quick‑reference table summarizing all available visualization functions
+in SigFun, their focus, and how to interpret them.
+
+| Visualization Function | Primary Focus | Best For | Typical Interpretation |
+|------------------|------------------|------------------|------------------|
+| **`plot_heat()`** | Integrated multi-panel overview | Summarizing top pathways across multiple databases | Compare NES, p-values, and enrichment curves together. |
+| **`barPlot()`** | Ranked significance summary | Highlighting top enriched pathways | Identify most significant or strongly enriched pathways. |
+| **`chordPlot()`** | Gene–pathway overlap | Showing shared or unique genes | Explore how genes contribute to multiple pathways. |
+| **`cnetPlot()`** | Gene–pathway network | Visualizing connections among pathways | Reveal hub genes shared between categories. |
+| **`dotPlot()`** | Compact pathway summary | Quick overview of enrichment strength and gene ratios | Compare significance and gene ratio across terms. |
+| **`emapPlot()`** | Pathway similarity network | Detecting functional clusters | Identify groups of related pathways via shared genes. |
+| **`gseaPlot()`** | Individual pathway enrichment score | Inspecting enrichment dynamics | Examine running enrichment score and cor e-enriched genes. |
+| **`heatPlot()`** | Gene × pathway association | Gene-level contribution visualization | Assess correlation or log2FC patterns across pathways. |
+| **`lollipopPlot()`** | NES-based summary | Comparing enrichment direction and magnitude | Visualize up- vs. down -regulated pathways by NES. |
+| **`ridgePlot()`** | Distribution of ranked genes | Exploring enrichment density per pathway | View how ranked genes distribute across pathways. |
+| **`treePlot()`** | Pathway clustering | Identifying similarity structure among terms | See hierarchical relationships among functional sets. |
+| **`upsetPlot()`** | Gene set intersections | Comparing overlap among pathways | Quantify shared and unique genes between top terms. |
+
+# Session Info
+
+```{r Session Info, echo=FALSE}
+sessionInfo()
+```
+

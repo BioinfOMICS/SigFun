@@ -17,7 +17,7 @@
 #' \enumerate{
 #'   \item \code{\link{sigCor}}: Calculate genome-wide correlations between
 #'   signature and transcriptome
-#'   \item \code{\link{plot_bar}}/\code{\link{plot_heat}}: Visualize significant
+#'   \item \code{\link{plot_heat}}: Visualize significant
 #'    pathways
 #'   \item \code{\link{sig2Fun}}: Complete analysis pipeline in one function
 #' }
@@ -46,6 +46,6 @@
 #' Subramanian A, et al. (2005) Gene set enrichment analysis. PNAS 102:15545-50
 #'
 #' @name SigFun
-#' @docType _PACKAGE
+#' @docType package
 #' @keywords package
-NULL
+"_PACKAGE"

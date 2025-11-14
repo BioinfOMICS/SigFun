@@ -5,19 +5,19 @@
 \title{Signature-to-Function Analysis}
 \usage{
 sig2Fun(
-  SE_data,
+  seData,
   t2g,
-  ranking.method = "cor",
+  rankingMethod = "cor",
   topN = 10,
   species = "human",
-  cor.method = "spearman",
-  Z.transform = FALSE,
-  significant_type = "pval",
+  corMethod = "spearman",
+  zTransform = FALSE,
+  significantType = "pval",
   strings = c("GOBP", "REACTOME", "HALLMARK", "SIGNALING")
 )
 }
 \arguments{
-\item{SE_data}{A SummarizedExperiment object containing:
+\item{seData}{A SummarizedExperiment object containing:
 - assays: Gene expression matrix, genes in rows, samples in columns
 - colData: Signature scores for each sample
 - rowData: Gene annotation including gene symbols that match the
@@ -30,7 +30,7 @@ Should be obtained from MSigDB (e.g., msigdb.v2023.1.Hs.symbols.gmt)
 or a custom gene set.
 Each list element represents a pathway with genes as vector elements.}
 
-\item{ranking.method}{Character. Method to rank genes for pathway analysis:
+\item{rankingMethod}{Character. Method to rank genes for pathway analysis:
 - "cor" (default): Use test statistics
 - "pval": Use p-values}
 
@@ -42,28 +42,28 @@ Default is 10.}
 - "human" (default)
 - "mouse"}
 
-\item{cor.method}{Character. Statistical method for correlation analysis:
+\item{corMethod}{Character. Statistical method for correlation analysis:
 - "spearman" (default): For general correlations
 - "pearson": For linear relationships
 - "kendall": For non-parametric rank correlation
 - "logit": For binary signatures (e.g., high/low risk classification)}
 
-\item{Z.transform}{Logical. Whether to perform z-transformation on gene
+\item{zTransform}{Logical. Whether to perform z-transformation on gene
 expression data:
 - FALSE (default): No transformation
 - TRUE: Apply z-transformation (standardization)
 For binary signatures (e.g., using logit correlation), set to FALSE.}
+
+\item{significantType}{Character. Method for statistical significance
+filtering:
+- "pval": Use p-values (default)
+- "qval": Use Q-values (adjusted p-values)}
 
 \item{strings}{Character vector. Specifies which pathway categories to
 include in visualization.
 Default includes: c("GOBP", "GOCC", "GOMF", "KEGG", "REACTOME",
 "WP", "HALLMARK", "SIGNALING")
 For example, "HALLMARK" will filter for pathways containing it.}
-
-\item{significat_type}{Character. Method for statistical significance
-filtering:
-- "pval": Use p-values (default)
-- "qval": Use Q-values (adjusted p-values)}
 }
 \value{
 Returns an enhanced SummarizedExperiment object with additional slots
@@ -88,19 +88,17 @@ classifications) and continuous values (e.g., prognostic risk scores).
 }
 \examples{
 # Load demo dataset
-data("demo_GSE181574")
-
+data("expr.data")
+data("mapping")
+data("SIG_MAT")
+data("t2g")
+seData <- SummarizedExperiment::SummarizedExperiment(
+assays=list(abundance=as.matrix(expr.data)),
+rowData=S4Vectors::DataFrame(mapping, row.names=mapping$ensg_id),
+colData=S4Vectors::DataFrame(SIG_MAT))
 # For analysis of binary signature (e.g., MammaPrint high/low risk)
-res <- sig2Fun(
-  SE_data = SE_GSE181574,
-  ranking.method = "stat",
-  species = "human",
-  cor.method = "logit",  # Use logit for binary variables
-  topN = 10,
-  Z.transform = FALSE,  # No normalization needed for binary variables
-  significat_type = "pval",
-  strings = c("HALLMARK")
-)
-
+res <- sig2Fun(seData=seData, t2g=t2g, rankingMethod="cor",
+species="human", corMethod="logit", topN=10, zTransform=FALSE,
+significantType="pval", strings=c("HALLMARK"))
 # To visualize Heatmap results: res$heatmap
 }

@@ -73,22 +73,21 @@
 }
 
 .nesbarplot <- function(NES,maxNES) {
-    color <- base::ifelse(as.numeric(NES)>0,'#FD7C69','#5F90BB')
+    color <- base::ifelse(as.numeric(NES)>0,'#D25C43','#5979A3')
     data.frame(Y="",X=abs(NES),X2=1/4*abs(NES)) %>%
         ggplot2::ggplot(ggplot2::aes(x=X, y=Y)) +
         ggplot2::geom_bar(stat="identity",fill=color,na.rm=TRUE) +
-        #geom_text(aes(x=X2 ,label=round(X,2)),hjust=0) +
         ggplot2::scale_x_continuous(limits=c(0,maxNES)) +
         ggplot2::theme(panel.background=ggplot2::element_blank(),
-                        plot.background=ggplot2::element_blank(),
-                        axis.text.x=ggplot2::element_blank(),
-                        axis.line=ggplot2::element_blank(),
-                        axis.text=ggplot2::element_blank(),
-                        axis.ticks=ggplot2::element_blank(),
-                        panel.grid=ggplot2::element_blank(),
-                        axis.title=ggplot2::element_blank(),
-                        plot.margin=rep(ggplot2::unit(0,"null"),4),
-                        panel.spacing=rep(ggplot2::unit(0,"null"),4)
+                       plot.background=ggplot2::element_blank(),
+                       axis.text.x=ggplot2::element_blank(),
+                       axis.line=ggplot2::element_blank(),
+                       axis.text=ggplot2::element_blank(),
+                       axis.ticks=ggplot2::element_blank(),
+                       panel.grid=ggplot2::element_blank(),
+                       axis.title=ggplot2::element_blank(),
+                       plot.margin=rep(ggplot2::unit(0,"null"),4),
+                       panel.spacing=rep(ggplot2::unit(0,"null"),4)
         )
 }
 
@@ -97,16 +96,16 @@
                             ticksSize=0.2) {
 
     pd <- .plotEnrichmentData(pathway=pathway,stats=stats,gseaParam=gseaParam)
-    pd$ticks$color <- ifelse(as.numeric(color)>0,'#FD7C69','#5F90BB')
+    pd$ticks$color <- ifelse(as.numeric(color)>0,'#D25C43','#5979A3')
     with(pd,ggplot2::ggplot(data=curve) + ggplot2::geom_segment(data=ticks,
-                                            mapping=ggplot2::aes(x=rank,
-                                                        y=-spreadES/16,
-                                                        xend=rank,
-                                                        yend=spreadES/16,
-                                                        color=color),
-                linewidth=ticksSize, show.legend=FALSE) +
-                ggplot2::scale_colour_identity() +
-                ggplot2::theme_classic())
+                                                                mapping=ggplot2::aes(x=rank,
+                                                                                     y=-spreadES/16,
+                                                                                     xend=rank,
+                                                                                     yend=spreadES/16,
+                                                                                     color=color),
+                                                                linewidth=ticksSize, show.legend=FALSE) +
+             ggplot2::scale_colour_identity() +
+             ggplot2::theme_classic())
 }
 
 .plotEnrichmentData <- function(pathway, stats, gseaParam=1) {
@@ -120,7 +119,8 @@
     statsAdj <- stats[ord]
     statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
 
-    pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+    pathway <- unname(
+        as.vector(stats::na.omit(match(pathway, names(statsAdj)))))
     pathway <- sort(pathway)
     pathway <- unique(pathway)
 
@@ -147,82 +147,119 @@
         maxAbsStat=max(abs(statsAdj)))
 }
 
-.get_ps <- function(Pathways, fgseaRes, maxNES, valueStyle, headerLabelStyle,
-                    pathways.all, pathwayLabelStyleDefault, stats, breaklineN){
-    common_theme <- ggplot2::theme(panel.background=ggplot2::element_blank(),
-                                plot.background=ggplot2::element_blank(),
-                                axis.line=ggplot2::element_blank(),
-                                axis.text=ggplot2::element_blank(),
-                                axis.ticks=ggplot2::element_blank(),
-                                panel.grid=ggplot2::element_blank(),
-                                axis.title=ggplot2::element_blank(),
-                                plot.margin=rep(ggplot2::unit(0, "null"), 4),
-                                panel.spacing=rep(ggplot2::unit(0, "null"), 4))
-    ps <- lapply(names(Pathways), function(pn) {
+.get_ps <- function(pathways, fgseaRes, maxNES, valueStyle, headerLabelStyle,
+                   pathwaysAll, pathwayLabelStyleDefault, stats, breaklineN,
+                   pvalueType) {
+
+    commonTheme <- ggplot2::theme(
+        panel.background = ggplot2::element_blank(),
+        plot.background = ggplot2::element_blank(),
+        axis.line = ggplot2::element_blank(),
+        axis.text = ggplot2::element_blank(),
+        axis.ticks = ggplot2::element_blank(),
+        panel.grid = ggplot2::element_blank(),
+        axis.title = ggplot2::element_blank(),
+        plot.margin = rep(ggplot2::unit(0, "null"), 4),
+        panel.spacing = rep(ggplot2::unit(0, "null"), 4)
+    )
+
+    ps <- lapply(names(pathways), function(pn) {
 
         annotation <- fgseaRes[fgseaRes$ID == pn, ]
         pathway <- .labelBreak(pn, breaklineN)
-        #pathway <- paste0(unlist(stringr::str_split(pn, '_'))[-1], collapse='_')
-        list(.nesbarplot(annotation$NES, maxNES),
+
+        # Select appropriate p-value column
+        pvalToUse <- annotation[[pvalueType]]
+
+        list(
+            .nesbarplot(annotation$NES, maxNES),
             .cowplotText(sprintf("%.2f", annotation$NES), valueStyle),
-            .cowplotText(formatC(annotation$pvalue, digits=0, format="e"),
-            headerLabelStyle),
+            .cowplotText(sprintf("%.1f", -log10(pvalToUse)), valueStyle),
+
             cowplot::plot_grid(
-                                .plotEnrichment(pathways.all[[pn]], stats,
-                                color=annotation$NES) + common_theme +
-        ggplot2::theme(panel.background=ggplot2::element_rect(color="black"))),
-            .cowplotText(pathway, pathwayLabelStyleDefault))})
+                .plotEnrichment(pathwaysAll[[pn]], stats, color = annotation$NES) +
+                    commonTheme +
+                    ggplot2::theme(panel.background = ggplot2::element_rect(color = "black"))
+            ),
+            .cowplotText(pathway, pathwayLabelStyleDefault)
+        )
+    })
 
     return(ps)
 }
 
 .plotGseaTable <- function(
-    pathways, stats, fgseaRes, gseaParam=1, breaklineN=30, fontSize=8,
-    colwidths=c(0.8,0.9,0.9,3.6,6), pathwayLabelStyle=NULL, render=NULL,
-    headerLabelStyle=NULL, valueStyle=NULL, axisLabelStyle=NULL) {
+        pathways, stats, fgseaRes, gseaParam = 1, breaklineN = 30, fontSize = 8,
+        colWidths = c(0.8, 0.8, 2, 7, 5), pathwayLabelStyle = NULL, render = NULL,
+        headerLabelStyle = NULL, valueStyle = NULL, axisLabelStyle = NULL,
+        pvalueType = "pvalue") {
 
-    pathways.all <- pathways
-    pathwayLabelStyleDefault <-
-      list(size=fontSize, hjust=0, x=0.05, vjust=.4, lineheight=.8)
-    pathwayLabelStyle <- modifyList(pathwayLabelStyleDefault,
-                                as.list(pathwayLabelStyle))
+    pathwaysAll <- pathways
+    pathwayLabelStyleDefault <- list(size = fontSize, hjust = 0, x = 0.05, vjust = .4, lineheight = .8)
+    pathwayLabelStyle <- utils::modifyList(pathwayLabelStyleDefault, as.list(pathwayLabelStyle))
 
-    headerLabelStyleDefault <- list(size=10)
-    headerLabelStyle <- modifyList(headerLabelStyleDefault,
-                                as.list(headerLabelStyle))
-
-    valueStyleDefault <- list(size=10)
-    valueStyle <- modifyList(valueStyleDefault, as.list(valueStyle))
+    headerLabelStyleDefault <- list(size = fontSize + 2, fontface = "bold")
+    valueStyleDefault  <- list(size = fontSize + 2, fontface = "plain")
+    headerLabelStyle <- utils::modifyList(headerLabelStyleDefault, as.list(headerLabelStyle))
+    valueStyle <- utils::modifyList(valueStyleDefault, as.list(valueStyle))
 
     if (!is.null(render)) {
-warning("render argument is deprecated, a ggplot object is always returned")}
+        warning("render argument is deprecated; a ggplot object is always returned")
+    }
 
     statsAdj <- stats[order(rank(-stats))]
     statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
     statsAdj <- statsAdj / max(abs(statsAdj))
 
-    pathways <- lapply(pathways, function(p) {
-        unname(as.vector(na.omit(match(p, names(statsAdj)))))})
+    pathways <- lapply(pathways, function(p) unname(as.vector(stats::na.omit(match(p, names(statsAdj))))))
+    pathways <- pathways[vapply(pathways, length, FUN.VALUE = numeric(1)) > 0]
 
-    # fixes #40
-    pathways <- pathways[vapply(pathways, length, FUN.VALUE=numeric(1)) > 0]
-    NES_all <- fgseaRes %>% dplyr::filter(ID %in% names(pathways)) %>%
+    NESAll <- fgseaRes %>%
+        dplyr::filter(ID %in% names(pathways)) %>%
         dplyr::pull(NES)
-    maxNES <- max(abs(NES_all)) # pmax(abs(NES_all))
+    maxNES <- max(abs(NESAll))
 
-    ps <- .get_ps(Pathways=pathways, fgseaRes=fgseaRes, maxNES=maxNES,
-            valueStyle=valueStyle, headerLabelStyle=headerLabelStyle,
-            pathways.all=pathways.all, breaklineN,
-    pathwayLabelStyleDefault=pathwayLabelStyleDefault, stats=stats)
+    ps <- .get_ps(
+        pathways = pathways, fgseaRes = fgseaRes, maxNES = maxNES,
+        valueStyle = valueStyle, headerLabelStyle = headerLabelStyle,
+        pathwaysAll = pathwaysAll, breaklineN = breaklineN,
+        pathwayLabelStyleDefault = pathwayLabelStyleDefault, stats = stats,
+        pvalueType = pvalueType
+    )
 
-    grobs <- c(lapply(c("","NES","P-value","Enrichment plot"), .cowplotText,
-            style=headerLabelStyle), list(.cowplotText("Pathway",
-            modifyList(headerLabelStyle, pathwayLabelStyle[c("hjust", "x")]))),
-            unlist(ps, recursive=FALSE))
+    # Create header label based on pvalueType
+    pvalHeader <- switch(
+        pvalueType,
+        "pvalue" = "-log10 P",
+        "p.adjust" = "-log10 adj.P",
+        "qvalue" = "-log10 Q"
+    )
+
+    grobs <- c(
+        lapply(
+            c("", "NES", pvalHeader, "Enrichment plot"),
+            .cowplotText, style = headerLabelStyle
+        ),
+        list(
+            .cowplotText(
+                "Pathway",
+                utils::modifyList(headerLabelStyle, pathwayLabelStyle[c("hjust", "x")])
+            )
+        ),
+        unlist(ps, recursive = FALSE)
+    )
 
     p <- cowplot::plot_grid(
-        plotlist=grobs, ncol=sum(as.numeric(colwidths) != 0),
-        rel_widths=colwidths[as.numeric(colwidths) != 0])
+        plotlist = grobs,
+        ncol = sum(as.numeric(colWidths) != 0),
+        rel_widths = colWidths[as.numeric(colWidths) != 0]
+    )
+
+    p <- cowplot::ggdraw(p) +
+        ggplot2::theme(
+            plot.margin = ggplot2::margin(t = 5, r = 5, b = 5, l = 5, unit = "pt")
+        )
+
     return(p)
 }
 
