@@ -1,0 +1,18 @@
+template:
+  bootstrap: 5
+  bootswatch: flatly
+articles:
+ - title: Articles
+   navbar: ~
+   contents:
+    - QuickStart
+    - Data_Preparation
+    - Stepwise_Workflow
+    - Visualization_Functions
+    - Custom_Gene_Ranking
+figures:
+  fig.width: 7
+  fig.height: 4.8
+  fig.retina: 2
+  dpi: 96
+  fig.asp: ~
