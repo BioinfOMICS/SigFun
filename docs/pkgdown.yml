@@ -1,0 +1,10 @@
+pandoc: '3.2'
+pkgdown: 2.1.3
+pkgdown_sha: ~
+articles:
+  Custom_Gene_Ranking: Custom_Gene_Ranking.html
+  Data_Preparation: Data_Preparation.html
+  QuickStart: QuickStart.html
+  Stepwise_Workflow: Stepwise_Workflow.html
+  Visualization_Functions: Visualization_Functions.html
+last_built: 2025-11-10T09:55Z
