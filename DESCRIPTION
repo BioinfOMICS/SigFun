@@ -13,7 +13,7 @@ Authors@R: c(
 Description: 
     SigFun provides a streamlined workflow for analyzing transcriptomic data and relating it to specific gene signatures. 
     It takes a gene signature and transcriptome profile as input. 
-    n essence, this package helps researchers understand the functional implications of a gene signature by identifying which biological pathways or processes are significantly enriched in datasets where the signature is prominent. 
+    In essence, this package helps researchers understand the functional implications of a gene signature by identifying which biological pathways or processes are significantly enriched in datasets where the signature is prominent. 
     It automates the GSEA process and provides visualizations to aid in interpretation.
 License: MIT + file LICENSE
 URL: https://github.com/TMSWCChenglab/SigFun
@@ -26,7 +26,7 @@ Imports: clusterProfiler, S4Vectors, dplyr, ggplot2, ggpubr, tibble, tidyr,
          scales, stringr, DOSE, GseaVis, circlize, cli, enrichplot (>= 1.26.6), 
          forcats, igraph, randomcoloR, yulab.utils, BiocGenerics, ggtangle, 
          SummarizedExperiment, cowplot, data.table, fgsea, methods, rlang, 
-         magrittr
+         magrittr, ggridges, ggtree, viridisLite, grid, aplot, ggrepel
 Suggests: DT, devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
 Additional_repositories: https://bioconductor.org/packages/release/bioc
 VignetteBuilder: knitr

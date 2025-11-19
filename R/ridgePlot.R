@@ -59,7 +59,7 @@
 #' @importFrom DOSE geneInCategory
 #' @importFrom ggridges geom_density_ridges
 #' @importFrom ggplot2 ggplot aes scale_fill_gradient xlab ylab theme_classic
-#'   element_text element_blank element_line scale_y_discrete guide_colorbar
+#'   element_text element_blank element_line scale_y_discrete guide_colorbar %+replace%
 #' @importFrom dplyr mutate select if_else group_by ungroup
 #' @importFrom tibble remove_rownames
 #' @importFrom rlang check_installed .data
@@ -68,7 +68,7 @@
 #' @export
 #' @examples
 #' data("sig2Fun_result")
-#' ridgePlot(seDataFgsea = sig2Fun_result)s
+#' ridgePlot(seDataFgsea = sig2Fun_result)
 ridgePlot <- function(seDataFgsea, showCategory = 10, breaklineN = 30,
                       fill = "p.adjust", fontSize = 10,
                       decreasing = TRUE) {
