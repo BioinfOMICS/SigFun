@@ -21,7 +21,7 @@
     stopifnot("gseaResult" %in% names(S4Vectors::metadata(se)))
 }
 
-.extractGeneSets <- function(gseaResult, showCategory=30){
+.extractGeneSetsDF <- function(gseaResult, showCategory=30){
     geneSets <- DOSE::geneInCategory(gseaResult)[gseaResult@result$ID]
     names(geneSets) <- gseaResult@result$Description
     if (is.numeric(showCategory)){

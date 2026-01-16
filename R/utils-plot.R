@@ -231,6 +231,136 @@
         (\(hc) rownames(hcData)[hc$order])()
 }
 
+
+## Internal function for emap and tree plot
+.updateN <- function (x, showCategory)
+{
+    if (!is.numeric(showCategory)) {
+        if (inherits(x, "list")) {
+            showCategory <- showCategory[showCategory %in% names(x)]
+        }
+        else {
+            showCategory <- intersect(showCategory, x$Description)
+        }
+        return(showCategory)
+    }
+    n <- showCategory
+    if (inherits(x, "list")) {
+        nn <- length(x)
+    }
+    else {
+        nn <- nrow(x)
+    }
+    if (nn < n) {
+        n <- nn
+    }
+    return(n)
+}
+
+## Internal function for emap plot
+.graphFromEnrichResult <- function (x, showCategory = 30, color = "p.adjust", min_edge = 0.2,
+                                    size_edge = 0.5)
+{
+    n <- .updateN(x, showCategory)
+    y <- as.data.frame(x)
+    g <- .getIgraph(x = x, nCategory = n, color = color, cex_line = size_edge,
+                    min_edge = min_edge)
+    gs <- .extractGeneSets(x, n)
+    return(list(graph = g, geneSet = gs))
+}
+
+
+.getIgraph <- function (x, nCategory, color, cex_line, min_edge)
+{
+    y <- as.data.frame(x)
+    geneSets <- DOSE::geneInCategory(x)
+    if (is.numeric(nCategory)) {
+        y <- y[1:nCategory, ]
+    }
+    else {
+        y <- y[match(nCategory, y$Description), ]
+        nCategory <- length(nCategory)
+    }
+    if (nCategory == 0) {
+        stop("no enriched term found...")
+    }
+    .buildEmapGraph(enrichDf = y, geneSets = geneSets, color = color,
+                    cex_line = cex_line, min_edge = min_edge, pair_sim = x@termsim,
+                    method = x@method)
+}
+
+
+
+.buildEmapGraph <- function (enrichDf, geneSets, color, cex_line, min_edge, pair_sim,
+                             method)
+{
+    if (!is.numeric(min_edge) | min_edge < 0 | min_edge > 1) {
+        stop("\"min_edge\" should be a number between 0 and 1.")
+    }
+    if (is.null(dim(enrichDf)) | nrow(enrichDf) == 1) {
+        g <- igraph::make_empty_graph(n = 0, directed = FALSE)
+        g <- igraph::add_vertices(g, nv = 1)
+        igraph::V(g)$name <- as.character(enrichDf$Description)
+        igraph::V(g)$color <- "red"
+        return(g)
+    }
+    else {
+        w <- pair_sim[as.character(enrichDf$Description), as.character(enrichDf$Description)]
+    }
+    wd <- reshape2::melt(w)
+    wd <- wd[wd[, 1] != wd[, 2], ]
+    wd <- wd[!is.na(wd[, 3]), ]
+    if (method != "JC") {
+        wd[, 1] <- enrichDf[wd[, 1], "Description"]
+        wd[, 2] <- enrichDf[wd[, 2], "Description"]
+    }
+    g <- igraph::graph_from_data_frame(wd[, -3], directed = FALSE)
+    igraph::E(g)$width <- sqrt(wd[, 3] * 5) * cex_line
+    igraph::E(g)$weight <- wd[, 3]
+    # igraph >= 2.0.0: delete.edges() is deprecated
+    g <- igraph::delete_edges(g, igraph::E(g)[wd[, 3] < min_edge])
+    idx <- unlist(sapply(igraph::V(g)$name, function(x) which(x == enrichDf$Description)))
+    cnt <- sapply(geneSets[idx], length)
+    igraph::V(g)$size <- cnt
+    if (color %in% names(enrichDf)) {
+        colVar <- enrichDf[idx, color]
+    }
+    else {
+        colVar <- color
+    }
+    igraph::V(g)$color <- colVar
+    return(g)
+}
+
+
+.extractGeneSets <- function (x, n)
+{
+    n <- .updateN(x, n)
+    if (inherits(x, "list")) {
+        geneSets <- x
+    }
+    else {
+        geneSets <- DOSE::geneInCategory(x)
+        y <- as.data.frame(x)
+        geneSets <- geneSets[y$ID]
+        names(geneSets) <- y$Description
+    }
+    if (is.numeric(n)) {
+        return(geneSets[1:n])
+    }
+    return(geneSets[n])
+}
+
+## Internal function for tree plot
+.fillTermsim <- function (x, keep)
+{
+    termsim <- x@termsim[keep, keep]
+    termsim[which(is.na(termsim))] <- 0
+    termsim2 <- termsim + t(termsim)
+    for (i in seq_len(nrow(termsim2))) termsim2[i, i] <- 1
+    return(termsim2)
+}
+
 .groupTree <- function(hc, clus, d, offsetTiplab, nWords,
                        labelFormatCladelab, labelFormatTiplab, offset,
                        leafFontSize, cladeFontSize,
@@ -286,16 +416,16 @@
             na.value = "grey50",
             drop = FALSE
         )
-    p <- p %<+% d
+    p <- ggfun::`%<+%`(p, d)
     if (!is.null(labelFormatTiplab)) {
-        labelFuncTiplab <- enrichplot:::default_labeller(labelFormatTiplab)
+        labelFuncTiplab <- .defaultLabeller(labelFormatTiplab)
         if (is.function(labelFormatTiplab)) {
             labelFuncTiplab <- labelFormatTiplab
         }
         isTip <- p$data$isTip
         p$data$label[isTip] <- labelFuncTiplab(p$data$label[isTip])
     }
-    p <- enrichplot:::add_cladelab(
+    p <- .addCladelab(
         p = p,
         nWords = nWords,
         label_format_cladelab = labelFormatCladelab,
@@ -341,3 +471,237 @@
     )
     return(p)
 }
+
+.defaultLabeller <- function (n)
+{
+    fun <- function(str) {
+        str <- gsub("_", " ", str)
+        yulab.utils::str_wrap(str, n)
+    }
+    structure(fun, class = "labeller")
+}
+
+.addCladelab <- function (p, nWords, label_format_cladelab, offset, roots, fontsize,
+                          group_color, cluster_color, pdata, extend, hilight, align)
+{
+    cluster_label <- sapply(cluster_color, .getWordcloud, ggData = pdata,
+                            nWords = nWords)
+    label_func_cladelab <- .defaultLabeller(label_format_cladelab)
+    if (is.function(label_format_cladelab)) {
+        label_func_cladelab <- label_format_cladelab
+    }
+    cluster_label <- label_func_cladelab(cluster_label)
+    n_color <- length(levels(cluster_color)) - length(cluster_color)
+    if (is.null(group_color)) {
+        rlang::check_installed("scales", "for `add_cladelab()`.")
+        color2 <- (scales::hue_pal())(length(roots) + n_color)
+        if (n_color > 0)
+            color2 <- color2[-seq_len(n_color)]
+    }
+    else {
+        color2 <- group_color
+    }
+    df <- data.frame(node = as.numeric(roots), labels = cluster_label,
+                     cluster = cluster_color, color = color2)
+    p <- p + ggnewscale::new_scale_colour() + ggtree::geom_cladelab(data = df,
+                                                                    mapping = ggplot2::aes(node = node, label = labels, color = cluster),
+                                                                    textcolor = "black", extend = extend, show.legend = FALSE,
+                                                                    fontsize = fontsize, offset = offset) + ggplot2::scale_color_manual(values = df$color,
+                                                                                                                                        guide = "none")
+    if (hilight) {
+        p <- p + ggtree::geom_hilight(data = df,
+                                      mapping = ggplot2::aes(node = node, fill = cluster),
+                                      show.legend = FALSE, align = align) +
+            ggplot2::scale_fill_manual(values = df$color, guide = "none")
+    }
+    return(p)
+}
+
+.getWordcloud <- function (cluster, ggData, nWords)
+{
+    `%>%` <- magrittr::`%>%`
+    words <- ggData$name %>% gsub(" in ", " ", .) %>% gsub(" [0-9]+ ",
+                                                           " ", .) %>% gsub("^[0-9]+ ", "", .) %>% gsub(" [0-9]+$",
+                                                                                                        "", .) %>% gsub(" [A-Za-z] ", " ", .) %>% gsub("^[A-Za-z] ",
+                                                                                                                                                       "", .) %>% gsub(" [A-Za-z]$", "", .) %>% gsub(" / ",
+                                                                                                                                                                                                     " ", .) %>% gsub(" and ", " ", .) %>% gsub(" of ", " ",
+                                                                                                                                                                                                                                                .) %>% gsub(",", " ", .) %>% gsub(" - ", " ", .)
+    net_tot <- length(words)
+    clusters <- unique(ggData$color2)
+    words_i <- words[which(ggData$color2 == cluster)]
+    sel_tot <- length(words_i)
+    sel_w <- .getWordFreq(words_i)
+    net_w_all <- .getWordFreq(words)
+    net_w <- net_w_all[names(sel_w)]
+    tag_size <- (sel_w/sel_tot)/(net_w/net_tot)
+    tag_size <- tag_size[order(tag_size, decreasing = TRUE)]
+    nWords <- min(nWords, length(tag_size))
+    tag <- names(tag_size[seq_len(nWords)])
+    dada <- strsplit(words_i, " ")
+    len <- vapply(dada, length, FUN.VALUE = 1)
+    rank <- NULL
+    for (i in seq_len(sel_tot)) {
+        rank <- c(rank, seq_len(len[i]))
+    }
+    word_data <- data.frame(word = unlist(dada), rank = rank)
+    word_rank1 <- stats::aggregate(rank ~ word, data = word_data,
+                                   sum)
+    rownames(word_rank1) <- word_rank1[, 1]
+    word_rank1 <- word_rank1[names(sel_w), ]
+    word_rank1[, 2] <- word_rank1[, 2]/as.numeric(sel_w)
+    tag_order <- word_rank1[tag, ]
+    tag_order <- tag_order[order(tag_order[, 2]), ]
+    tag_clu_i <- paste(tag_order$word, collapse = " ")
+}
+
+.getWordFreq <- function (wordd)
+{
+    dada <- strsplit(wordd, " ")
+    didi <- table(unlist(dada))
+    didi <- didi[order(didi, decreasing = TRUE)]
+    word_name <- names(didi)
+    fun_num_w <- function(ww) {
+        sum(vapply(dada, function(w) {
+            ww %in% w
+        }, FUN.VALUE = 1))
+    }
+    word_num <- vapply(word_name, fun_num_w, FUN.VALUE = 1)
+    word_w <- word_num[order(word_num, decreasing = TRUE)]
+}
+
+## Internal function for gsea plot
+.getGsdata <- function (x, geneSetID)
+{
+    if (length(geneSetID) == 1) {
+        gsdata <- .gsInfo(x, geneSetID)
+        return(gsdata)
+    }
+    yulab.utils::rbindlist(lapply(geneSetID, .gsInfo, object = x))
+}
+
+.gsInfo <- function (object, geneSetID)
+{
+    geneList <- object@geneList
+    if (is.numeric(geneSetID))
+        geneSetID <- object@result[geneSetID, "ID"]
+    geneSet <- object@geneSets[[geneSetID]]
+    exponent <- object@params[["exponent"]]
+    df <- .gseaScores(geneList, geneSet, exponent, fortify = TRUE)
+    df$ymin <- 0
+    df$ymax <- 0
+    pos <- df$position == 1
+    h <- diff(range(df$runningScore))/20
+    df$ymin[pos] <- -h
+    df$ymax[pos] <- h
+    df$geneList <- geneList
+    if (length(object@gene2Symbol) == 0) {
+        df$gene <- names(geneList)
+    }
+    else {
+        df$gene <- object@gene2Symbol[names(geneList)]
+    }
+    df$Description <- object@result[geneSetID, "Description"]
+    return(df)
+}
+
+.gseaScores <- function (geneList, geneSet, exponent = 1, fortify = FALSE)
+{
+    geneSet <- intersect(geneSet, names(geneList))
+    N <- length(geneList)
+    Nh <- length(geneSet)
+    Phit <- Pmiss <- numeric(N)
+    hits <- names(geneList) %in% geneSet
+    Phit[hits] <- abs(geneList[hits])^exponent
+    NR <- sum(Phit)
+    Phit <- cumsum(Phit/NR)
+    Pmiss[!hits] <- 1/(N - Nh)
+    Pmiss <- cumsum(Pmiss)
+    runningES <- Phit - Pmiss
+    max.ES <- max(runningES)
+    min.ES <- min(runningES)
+    if (abs(max.ES) > abs(min.ES)) {
+        ES <- max.ES
+    }
+    else {
+        ES <- min.ES
+    }
+    df <- data.frame(x = seq_along(runningES), runningScore = runningES,
+                     position = as.integer(hits))
+    if (fortify == TRUE) {
+        return(df)
+    }
+    df$gene = names(geneList)
+    res <- list(ES = ES, runningES = df)
+    return(res)
+}
+
+.tableGrob2 <- function (d, p = NULL)
+{
+    d <- d[order(rownames(d)), ]
+    rlang::check_installed("gridExtra", "for `tableGrob2()`.")
+    tp <- gridExtra::tableGrob(d)
+    if (is.null(p)) {
+        return(tp)
+    }
+    p_data <- ggplot_build(p)$data[[1]]
+    p_data <- p_data[order(p_data[["group"]]), ]
+    pcol <- unique(p_data[["colour"]])
+    j <- which(tp$layout$name == "rowhead-fg")
+    for (i in seq_along(pcol)) {
+        tp$grobs[j][[i + 1]][["gp"]] <- gpar(col = pcol[i])
+    }
+    return(tp)
+}
+
+## Internal function for cnet plot
+.subsetCnetList <- function (x, showCategory)
+{
+    if (!is.numeric(showCategory)) {
+        return(x[names(x) %in% showCategory])
+    }
+    n <- length(x)
+    if (length(showCategory) == 1) {
+        showCategory <- seq(showCategory)
+    }
+    if (any(showCategory) > n) {
+        msg <- sprintf("any showCategory value that is large than %d will be removed.",
+                       n)
+        message(msg)
+    }
+    showCategory <- showCategory[showCategory <= n]
+    return(x[showCategory])
+}
+
+.subsetCnetListItem <- function (x, showItem = "all")
+{
+    if (length(showItem) == 1 && showItem == "all")
+        return(x)
+    lapply(x, function(y) y[y %in% showItem])
+}
+
+
+.list2graph <- function (inputList, directed = FALSE)
+{
+    x <- .list2df(inputList)
+    g <- igraph::graph_from_data_frame(x, directed = directed)
+    igraph::V(g)$.isCategory <- igraph::V(g)$name %in% names(inputList)
+    size <- vapply(inputList, length, FUN.VALUE = numeric(1))
+    igraph::V(g)$size <- igraph::degree(g)
+    return(g)
+}
+
+
+.getEdgeData <- function (g)
+{
+    e <- as.data.frame(igraph::as_edgelist(g))
+    enames <- igraph::edge_attr_names(g)
+    if (length(enames) > 0) {
+        for (eattr in enames) {
+            e[[eattr]] <- igraph::edge_attr(g, eattr)
+        }
+    }
+    return(e)
+}
+
+
+

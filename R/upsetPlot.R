@@ -74,7 +74,7 @@ upsetPlot <- function(seDataFgsea, showCategory = 5, breaklineN = 30, type = "bo
     match.arg(type, c("bar", "box"))
 
     gseaRaw <- .extractDF(seDataFgsea, type = "gseaRaw")
-    geneSets <- .extractGeneSets(gseaRaw, showCategory)
+    geneSets <- .extractGeneSetsDF(gseaRaw, showCategory)
     upsetData <- .upsetData(geneSets, gseaRaw, breaklineN, type)
 
     upsetTop <- switch(

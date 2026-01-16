@@ -1,10 +1,8 @@
 #' @title gseaPlot
+#'
 #' @description The \code{gseaPlot} function generates a publication-quality
 #'   visualization of Gene Set Enrichment Analysis (GSEA) results from a
-#'   \code{SummarizedExperiment} object. It wraps and extends
-#'   \code{enrichplot::gseaplot2()} with additional control over layout,
-#'   color palette, font size, subplot arrangement, and significance table
-#'   display options.
+#'   \code{SummarizedExperiment} object.
 #'
 #' @param seDataFgsea A \code{SummarizedExperiment} object containing GSEA
 #'   results that can be processed by the internal \code{.extractDF()} function
@@ -86,7 +84,7 @@ gseaPlot <- function(
 
     ESgeom <- match.arg(ESgeom, c("line", "dot"))
     geneList <- position <- NULL
-    gsdata <- enrichplot:::get_gsdata(x, geneSetID)
+    gsdata <- .getGsdata(x, geneSetID)
 
     p <- ggplot2::ggplot(gsdata, ggplot2::aes(x = x)) + ggplot2::xlab(NULL) +
         ggplot2::theme_classic(fontSize) +
@@ -112,7 +110,7 @@ gseaPlot <- function(
         theme(axis.text.x=element_blank(),
               axis.ticks.x=element_blank(),
               axis.line.x=element_blank(),
-              plot.margin=margin(t=.2, r = .2, b=0, l=.2, unit="cm"))
+              plot.margin=ggplot2::margin(t=.2, r = .2, b=0, l=.2, unit="cm"))
 
     i <- 0
     for (term in unique(gsdata$Description)) {
@@ -149,7 +147,7 @@ gseaPlot <- function(
                         xmax = xmax,
                         col = col[unique(inv)])
         # Updated for modern ggplot2 syntax
-        p2 <- p2 + geom_rect(
+        p2 <- p2 + ggplot2::geom_rect(
             aes(
                 xmin = .data$xmin,
                 xmax = .data$xmax,
@@ -169,7 +167,7 @@ gseaPlot <- function(
         data = df2, aes(x = .data$x, xend = .data$x, y = .data$y, yend = 0), color = "grey")
     p.pos <- p.pos + ylab("Ranked List Metric") +
         xlab("Rank in Ordered Dataset") +
-        theme(plot.margin=margin(t = -.1, r = .2, b=.2, l=.2, unit="cm"))
+        ggplot2::theme(plot.margin=margin(t = -.1, r = .2, b=.2, l=.2, unit="cm"))
 
     # plot title with bold font and increased size if title is provided
     if (!is.null(title) && !is.na(title) && title != "")
@@ -208,7 +206,7 @@ gseaPlot <- function(
             pd[, i] <- format(pd[, i], digits = 4)
         }
         # Replace deprecated `rows` argument with default behavior
-        tp <- enrichplot:::tableGrob2(d = pd, p = p.res)
+        tp <- .tableGrob2(d = pd, p = p.res)
 
         # Reduce font size of all text grobs in the table for better readability
         text_idx <- which(sapply(tp$grobs, inherits, "text"))
@@ -217,7 +215,7 @@ gseaPlot <- function(
         }
 
 
-        p.res <- p.res + theme(legend.position = "none") +
+        p.res <- p.res + ggplot2::theme(legend.position = "none") +
             annotation_custom(tp,
                               xmin = quantile(p.res$data$x, .5),
                               xmax = quantile(p.res$data$x, .95),
@@ -228,12 +226,12 @@ gseaPlot <- function(
     plotlist <- list(p.res, p2, p.pos)[subPlots]
     n <- length(plotlist)
     plotlist[[n]] <- plotlist[[n]] +
-        theme(axis.line.x = element_line(),
+        ggplot2::theme(axis.line.x = element_line(),
               axis.ticks.x=element_line(),
               axis.text.x = element_text())
 
     if (length(subPlots) == 1)
-        return(plotlist[[1]] + theme(plot.margin=margin(t=.2, r = .2, b=.2,
+        return(plotlist[[1]] + ggplot2::theme(plot.margin=margin(t=.2, r = .2, b=.2,
                                                         l=.2, unit="cm")))
 
 

@@ -1,4 +1,5 @@
 #' @title cnetPlot
+#'
 #' @description The \code{cnetPlot} function generates a highly customizable
 #' concept network (CNET) visualization for gene set enrichment analysis (GSEA)
 #' results. It displays the relationships between enriched pathways and their
@@ -48,7 +49,7 @@
 #' @param hilight Character vector or \code{"none"}. Pathways to highlight
 #'   (opacity = 1). Non-highlighted nodes will have reduced opacity controlled
 #'   by \code{hilightAlpha}. Default is \code{"none"}.
-#' @param hilightAlpha Numeric. Transparency level (0–1) for non-highlighted
+#' @param hilightAlpha Numeric. Transparency level (0-1) for non-highlighted
 #'   nodes. Default is \code{0.3}.
 #' @param seed Integer or \code{NULL}. Random seed for reproducible layout
 #'   generation. Default is \code{NULL}.
@@ -87,8 +88,9 @@
 #'         }
 #' }
 #'
-#' @importFrom ggtangle cnetplot geom_cnet_label td_filter
-#' @importFrom igraph layout_nicely V
+#' @importFrom ggtangle geom_cnet_label td_filter
+#' @importFrom igraph layout_nicely V graph_from_data_frame degree
+#' @importFrom igraph as_edgelist edge_attr edge_attr_names
 #' @importFrom ggplot2 ggplot aes geom_point scale_color_gradient scale_color_gradient2
 #' @importFrom dplyr select mutate pull
 #' @importFrom tidyr separate_rows
@@ -161,7 +163,7 @@ cnetPlot <- function(
     names(x) <- wrappedNames
 
     if (is.numeric(showCategory)) {
-        x <- ggtangle:::subset_cnet_list(x, showCategory)
+        x <- .subsetCnetList(x, showCategory)
     } else {
         # Already handled by the match() function above
         x <- x
@@ -170,7 +172,7 @@ cnetPlot <- function(
 
     if (length(nodeLabel) > 1) {
         if (getOption("cnetplot_subset", default = FALSE)) {
-            x <- ggtangle:::subset_cnet_list_item(x, nodeLabel)
+            x <- .subsetCnetListItem(x, nodeLabel)
             nodeLabel <- "all"
         }
     } else if (!nodeLabel %in% c("category","all","none","item","gene","exclusive","share")) {
@@ -182,7 +184,7 @@ cnetPlot <- function(
     }
     if (length(nodeLabel) == 1 && nodeLabel == "gene") nodeLabel <- "item"
 
-    g <- ggtangle:::list2graph(x)
+    g <- .list2graph(x)
 
     igraph::V(g)$`.hilight` <- 1
     # Use mapWrappedToOrig to ensure correct matching after .labelBreak()
@@ -192,12 +194,12 @@ cnetPlot <- function(
             matchWrapped <- names(mapWrappedToOrig)[mapWrappedToOrig %in% hilight |
                                                         names(mapWrappedToOrig) %in% hilight]
             if (length(matchWrapped) > 0) {
-                y <- ggtangle:::subset_cnet_list(x, matchWrapped)
+                y <- .subsetCnetList(x, matchWrapped)
                 igraph::V(g)$`.hilight` <- hilightAlpha
                 igraph::V(g)$`.hilight`[igraph::V(g)$name %in% names(y)] <- 1
                 igraph::V(g)$`.hilight`[igraph::V(g)$name %in% unlist(y)] <- 1
             } else {
-                cli::cli_alert_warning("No matching hilight pathways found — all nodes remain default opacity.")
+                cli::cli_alert_warning("No matching hilight pathways found - all nodes remain default opacity.")
             }
         }
     }
@@ -221,7 +223,7 @@ cnetPlot <- function(
     }
 
     if (colorEdge == "category") {
-        ed <- ggtangle::get_edge_data(g)
+        ed <- .getEdgeData(g)
         names(ed)[1] <- "category"
         p <- p + ggtangle::geom_edge(ggplot2::aes(color = .data$category), data = ed, linewidth = sizeEdge) +
             ggnewscale::new_scale_color()

@@ -1,4 +1,5 @@
 #' @title emapPlot
+#'
 #' @description The \code{emapPlot} function generates a network-based enrichment
 #'   map visualization for Gene Set Enrichment Analysis (GSEA) results stored in
 #'   a \code{SummarizedExperiment} object. Each node represents a pathway or
@@ -60,7 +61,8 @@
 #'   }
 #'
 #' @importFrom igraph layout_with_kk V
-#' @importFrom ggtangle ggplot geom_edge %<+%
+#' @importFrom ggtangle ggplot geom_edge
+#' @importFrom ggfun %<+%
 #' @importFrom ggplot2 geom_point coord_equal scale_size scale_color_gradient
 #'   guides guide_colorbar guide_legend aes element_blank
 #' @importFrom ggrepel geom_text_repel
@@ -73,10 +75,8 @@
 #' emapPlot(seDataFgsea = sig2Fun_result)
 #'
 #' @note
-#' Requires \pkg{enrichplot} (>= 1.21.0) and \pkg{ggtangle} (>= 1.0.0)
-#' for consistent network visualization behavior.
-
-# Note: Requires enrichplot (>= 1.21.0) and ggtangle (>= 1.0.0)
+#' Requires \pkg{ggfun} for \code{\%<+\%\%}. The enrichment map graph is built
+#' internally (to avoid relying on non-exported upstream functions).
 emapPlot <- function(
         seDataFgsea, showCategory = 10,
         layout = igraph::layout_with_kk, color = "p.adjust", sizeCategory = 1,
@@ -88,21 +88,18 @@ emapPlot <- function(
     match.arg(color, c("pvalue", "p.adjust", "qvalue"))
     x <- .extractDF(seDataFgsea, type = "gseaSimilar")
 
-    gg <- enrichplot:::graph_from_enrichResult(
+    gg <- .graphFromEnrichResult(
         x, showCategory = showCategory, color = color,
         min_edge = minEdge, size_edge = sizeEdge
     )
 
     g <- gg$graph
-    size <- vapply(gg$geneSet, length, FUN.VALUE = numeric(1))
-    igraph::V(g)$size <- size[match(igraph::V(g)$name, names(size))]
-
     p <- ggplot(g, layout = layout) +
         ggtangle::geom_edge(color = colorEdge, linewidth = sizeEdge)
 
     # SigFun-style aesthetic mapping
     if (color %in% names(as.data.frame(x))) {
-        p <- p %<+% x[, c("Description", color)] +
+        p <- ggfun::`%<+%`(p, x[, c("Description", color)]) +
             geom_point(aes(color = -log10(.data[[color]]), size = .data$size)) +
             scale_size(range = c(3, 8) * sizeCategory) +
             scale_color_gradient(
@@ -115,7 +112,7 @@ emapPlot <- function(
                 color = guide_colorbar(order = 2, reverse = TRUE, barwidth = 0.9, barheight = 4.5)
             )
     } else {
-        p <- p %<+% x[, "Description", drop = FALSE] +
+        p <- ggfun::`%<+%`(p, x[, "Description", drop = FALSE]) +
             geom_point(aes(size = .data$size), color = color) +
             scale_size(range = c(3, 8) * sizeCategory)
     }

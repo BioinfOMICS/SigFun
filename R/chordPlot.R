@@ -67,7 +67,7 @@ chordPlot <- function(
         }
     }
     data <- .extractDF(seDataFgsea, type = "gseaReadable") |>
-        .extractGeneSets(showCategory) |>
+        .extractGeneSetsDF(showCategory) |>
         dplyr::mutate(name = .labelBreak(categoryID, breaklineN))
     initial_dev <- grDevices::dev.cur()
     data |> dplyr::select(Gene, name) |> .chrod(fontSize)

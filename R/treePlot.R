@@ -1,4 +1,5 @@
 #' @title treePlot
+#'
 #' @description The \code{treePlot} function creates a hierarchical tree plot
 #'   to visualize gene set enrichment analysis (GSEA) results. The tree plot
 #'   groups similar pathways together based on gene overlap and displays them
@@ -87,13 +88,12 @@
 #' @importFrom dplyr select filter
 #' @importFrom cli cli_abort
 #' @export
-#'
 #' @examples
 #' data("sig2Fun_result")
 #' treePlot(seDataFgsea = sig2Fun_result,
-#'           showCategory = 10,
-#'           dotColor = "pvalue",
-#'           hclustfun = "ward.D")
+#'          showCategory = 10,
+#'          dotColor = "pvalue",
+#'          hclustfun = "ward.D")
 treePlot <- function(seDataFgsea, showCategory = 10,
                      dotColor = 'pvalue', hclustfun = 'ward.D',
                      labelFormat = NULL, labelFormatTiplab = NULL,
@@ -203,11 +203,11 @@ treePlot <- function(seDataFgsea, showCategory = 10,
             vapply(length, FUN.VALUE = 1)
     }
 
-    n <- enrichplot:::update_n(x, showCategory)
+    n <- .updateN(x, showCategory)
     keep <- if (is.numeric(n)) seq_len(n) else match(n, rownames(x@termsim))
     if (length(keep) == 0) stop("no enriched term found...")
 
-    termSim2 <- enrichplot:::fill_termsim(x, keep)
+    termSim2 <- .fillTermsim(x, keep)
     hc <- stats::hclust(stats::as.dist(1 - termSim2), method = hclustMethod)
     clus <- stats::cutree(hc, nCluster)
     d <- data.frame(

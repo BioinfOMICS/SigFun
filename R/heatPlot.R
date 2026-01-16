@@ -96,7 +96,7 @@ heatPlot <- function(
     cor.df <- cor.df |>
         dplyr::rename(pvalue = dplyr::any_of("pval"))
 
-    data <- .extractGeneSets(gseaReadable, showCategory)
+    data <- .extractGeneSetsDF(gseaReadable, showCategory)
 
     cor.df <- cor.df |>
         dplyr::select(gene, dplyr::all_of(color), dplyr::all_of(size)) |>
