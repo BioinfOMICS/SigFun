@@ -1,7 +1,7 @@
 Package: SigFun
 Type: Package
 Title: SigFun
-Version: 0.99.11
+Version: 0.99.11.9001
 Authors@R: c(
     person("Wei-Chung", "Cheng", email="chenglabomics@gmail.com", 
     role = c("aut","cre","cph","fnd"), 
@@ -11,7 +11,7 @@ Authors@R: c(
     person("Wen-Jen", "Lin", role = c("aut","ctb"))
     )
 Description: 
-    SigFun provides a streamlined workflow for analyzing transcriptomic data and relating it to specific gene signatures. 
+    Provides a streamlined workflow for analyzing transcriptomic data and relating it to specific gene signatures. 
     It takes a gene signature and transcriptome profile as input. 
     In essence, this package helps researchers understand the functional implications of a gene signature by identifying which biological pathways or processes are significantly enriched in datasets where the signature is prominent. 
     It automates the GSEA process and provides visualizations to aid in interpretation.
@@ -24,10 +24,10 @@ Depends:
     R (>= 4.4.0)
 Imports: clusterProfiler, S4Vectors, dplyr, ggplot2, ggpubr, tibble, tidyr, 
          scales, stringr, DOSE, GseaVis, circlize, cli, enrichplot (>= 1.26.6), 
-         forcats, igraph, randomcoloR, yulab.utils, BiocGenerics, ggtangle, 
-         SummarizedExperiment, cowplot, data.table, fgsea, methods, rlang, 
-         magrittr, ggridges, ggtree, viridisLite, grid, aplot, ggrepel
-Suggests: DT, devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle
+         forcats, igraph, yulab.utils, BiocGenerics, ggtangle, SummarizedExperiment, 
+         cowplot, data.table, fgsea, methods, rlang, ggfun,magrittr, ggridges, 
+         ggtree, viridisLite, grid, aplot, ggrepel, reshape2, ggnewscale, gridExtra
+Suggests: DT, devtools, roxygen2, rmarkdown, testthat (>= 3.0.0), knitr, tidyverse, BiocStyle, ape
 Additional_repositories: https://bioconductor.org/packages/release/bioc
 VignetteBuilder: knitr
 Enhances: BiocManager, pandoc
