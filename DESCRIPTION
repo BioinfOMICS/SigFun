@@ -16,8 +16,8 @@ Description:
     In essence, this package helps researchers understand the functional implications of a gene signature by identifying which biological pathways or processes are significantly enriched in datasets where the signature is prominent. 
     It automates the GSEA process and provides visualizations to aid in interpretation.
 License: MIT + file LICENSE
-URL: https://github.com/TMSWCChenglab/SigFun
-BugReports: https://github.com/TMSWCChenglab/SigFun/issues
+URL: https://github.com/BioinfOMICS/SigFun/
+BugReports: https://github.com/BioinfOMICS/SigFun/issues
 LazyData: FALSE
 biocViews: Software, BiologicalQuestion, FunctionalPrediction, Pathways, BiomedicalInformatics, Reactome, KEGG, GeneSetEnrichment
 Depends:
