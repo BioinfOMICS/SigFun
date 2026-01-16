@@ -66,8 +66,8 @@ Subramanian A, et al. (2005) Gene set enrichment analysis. PNAS 102:15545-50
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/TMSWCChenglab/SigFun}
-  \item Report bugs at \url{https://github.com/TMSWCChenglab/SigFun/issues}
+  \item \url{https://github.com/BioinfOMICS/SigFun/}
+  \item Report bugs at \url{https://github.com/BioinfOMICS/SigFun/issues}
 }
 
 }
