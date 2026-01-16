@@ -1,107 +1,197 @@
-# Test file for .extractGeneSets function
-# Replace the content of tests/testthat/test-extractGeneSets.R with this content
-
 library(testthat)
 
-if (!isNamespaceLoaded("SigFun"))
-  requireNamespace("SigFun", quietly = TRUE)
+test_that(".extractGeneSets handles list input", {
+    geneSets <- list(
+        pathway1 = c("gene1", "gene2", "gene3"),
+        pathway2 = c("gene4", "gene5"),
+        pathway3 = c("gene6", "gene7", "gene8")
+    )
 
-# Define a minimal dummy S4 class to simulate gseaResult
-setClass("dummyGsea",
-         slots = c(result = "data.frame"),
-         package = "SigFun")
+    result <- .extractGeneSets(geneSets, 2)
 
-make_dummyGsea <- function(ids, descs) {
-  new("dummyGsea",
-      result = data.frame(
-        ID          = ids,
-        Description = descs,
+    expect_type(result, "list")
+    expect_equal(length(result), 2)
+    expect_equal(names(result), c("pathway1", "pathway2"))
+})
+
+test_that(".extractGeneSets handles numeric n with list", {
+    geneSets <- list(
+        set1 = c("A", "B"),
+        set2 = c("C", "D"),
+        set3 = c("E", "F"),
+        set4 = c("G", "H")
+    )
+
+    result <- .extractGeneSets(geneSets, 3)
+
+    expect_equal(length(result), 3)
+    expect_equal(names(result), c("set1", "set2", "set3"))
+})
+
+test_that(".extractGeneSets handles character n with list", {
+    geneSets <- list(
+        pathway1 = c("gene1", "gene2"),
+        pathway2 = c("gene3", "gene4"),
+        pathway3 = c("gene5", "gene6")
+    )
+
+    result <- .extractGeneSets(geneSets, c("pathway1", "pathway3"))
+
+    expect_equal(length(result), 2)
+    expect_equal(names(result), c("pathway1", "pathway3"))
+})
+
+test_that(".extractGeneSets handles single character n", {
+    geneSets <- list(
+        setA = c("x", "y"),
+        setB = c("z", "w")
+    )
+
+    result <- .extractGeneSets(geneSets, "setB")
+
+    expect_equal(length(result), 1)
+    expect_equal(names(result), "setB")
+    expect_equal(result$setB, c("z", "w"))
+})
+
+test_that(".extractGeneSets handles n = 1", {
+    geneSets <- list(
+        first = c("a", "b", "c"),
+        second = c("d", "e")
+    )
+
+    result <- .extractGeneSets(geneSets, 1)
+
+    expect_equal(length(result), 1)
+    expect_equal(names(result), "first")
+})
+
+test_that(".extractGeneSets handles all elements", {
+    geneSets <- list(
+        p1 = c("g1"),
+        p2 = c("g2"),
+        p3 = c("g3")
+    )
+
+    result <- .extractGeneSets(geneSets, 3)
+
+    expect_equal(length(result), 3)
+    expect_equal(result, geneSets)
+})
+
+test_that(".extractGeneSets preserves list structure", {
+    geneSets <- list(
+        pathway1 = c("gene1", "gene2", "gene3"),
+        pathway2 = c("gene4"),
+        pathway3 = c("gene5", "gene6")
+    )
+
+    result <- .extractGeneSets(geneSets, 2)
+
+    expect_type(result, "list")
+    expect_equal(result$pathway1, c("gene1", "gene2", "gene3"))
+    expect_equal(result$pathway2, c("gene4"))
+})
+
+test_that(".extractGeneSets handles empty selection", {
+    geneSets <- list(
+        set1 = c("a", "b"),
+        set2 = c("c", "d")
+    )
+
+    result <- .extractGeneSets(geneSets, character(0))
+
+    expect_equal(length(result), 0)
+})
+
+test_that(".extractGeneSets handles non-existent names", {
+    geneSets <- list(
+        pathway1 = c("gene1"),
+        pathway2 = c("gene2")
+    )
+
+    result <- .extractGeneSets(geneSets, c("pathway1", "nonexistent"))
+
+    expect_equal(length(result), 1)
+    expect_equal(names(result), "pathway1")
+})
+
+test_that(".extractGeneSets with enrichResult object extracts correctly", {
+    skip_if_not_installed("DOSE")
+
+    result_df <- data.frame(
+        ID = c("GO:0001", "GO:0002", "GO:0003"),
+        Description = c("Process 1", "Process 2", "Process 3"),
+        GeneRatio = c("2/100", "2/100", "2/100"),
+        BgRatio = c("10/1000", "10/1000", "10/1000"),
+        pvalue = c(0.01, 0.02, 0.03),
+        p.adjust = c(0.01, 0.02, 0.03),
+        qvalue = c(0.01, 0.02, 0.03),
+        geneID = c("gene1/gene2", "gene3/gene4", "gene5/gene6"),
+        Count = c(2, 2, 2),
         stringsAsFactors = FALSE
-      ))
-}
+    )
+    rownames(result_df) <- c("GO:0001", "GO:0002", "GO:0003")
 
-test_that(".extractGeneSets subsets correctly for numeric showCategory", {
-  gr       <- make_dummyGsea(ids = c("A", "B", "C"), descs = c("D1", "D2", "D3"))
-  geneSets <- list(A = c("gA1", "gA2"), B = c("gB"), C = c("gC"))
-  expected <- geneSets[1:2]
-  names(expected) <- gr@result$Description[1:2]
+    mock_result <- new("enrichResult",
+                       result = result_df,
+                       pvalueCutoff = 0.05,
+                       pAdjustMethod = "BH",
+                       qvalueCutoff = 0.2,
+                       organism = "test",
+                       ontology = "test",
+                       gene = c("gene1", "gene2", "gene3", "gene4", "gene5", "gene6"),
+                       keytype = "SYMBOL",
+                       universe = character(0),
+                       geneSets = list(
+                           "GO:0001" = c("gene1", "gene2"),
+                           "GO:0002" = c("gene3", "gene4"),
+                           "GO:0003" = c("gene5", "gene6")
+                       ),
+                       readable = FALSE)
 
-  # Expected output should match the actual structure returned by .list2df
-  expected_df <- data.frame(
-    categoryID = c("D1", "D1", "D2"),
-    Gene = c("gA1", "gA2", "gB"),
-    stringsAsFactors = FALSE
-  )
+    result <- .extractGeneSets(mock_result, 2)
 
-  # Stub DOSE::geneInCategory
-  orig_gic <- get("geneInCategory", envir = asNamespace("DOSE"))
-  unlockBinding("geneInCategory", asNamespace("DOSE"))
-  assign("geneInCategory", function(x) {
-    expect_identical(x, gr)
-    geneSets
-  }, envir = asNamespace("DOSE"))
-  lockBinding("geneInCategory", asNamespace("DOSE"))
-
-  # Don't stub .list2df - let it work naturally
-  on.exit({
-    unlockBinding("geneInCategory", asNamespace("DOSE"))
-    assign("geneInCategory", orig_gic, envir = asNamespace("DOSE"))
-    lockBinding("geneInCategory", asNamespace("DOSE"))
-  }, add = TRUE)
-
-  out <- .extractGeneSets(gr, showCategory = 2)
-  expect_identical(out, expected_df)
+    expect_type(result, "list")
+    expect_equal(length(result), 2)
+    expect_equal(names(result), c("Process 1", "Process 2"))
 })
 
-test_that(".extractGeneSets subsets correctly for character showCategory", {
-  gr       <- make_dummyGsea(ids = c("X", "Y", "Z"), descs = c("DescX", "DescY", "DescZ"))
-  geneSets <- list(X = c("gX1"), Y = c("gY1", "gY2"), Z = c("gZ1"))
-  showChar <- c("DescZ", "DescX")
+test_that(".extractGeneSets with enrichResult uses Description as names", {
+    skip_if_not_installed("DOSE")
 
-  # Expected output based on the selected categories
-  expected_df <- data.frame(
-    categoryID = c("DescZ", "DescX"),
-    Gene = c("gZ1", "gX1"),
-    stringsAsFactors = FALSE
-  )
+    result_df <- data.frame(
+        ID = c("ID001", "ID002"),
+        Description = c("Pathway A", "Pathway B"),
+        GeneRatio = c("2/100", "2/100"),
+        BgRatio = c("10/1000", "10/1000"),
+        pvalue = c(0.01, 0.02),
+        p.adjust = c(0.01, 0.02),
+        qvalue = c(0.01, 0.02),
+        geneID = c("g1/g2", "g3/g4"),
+        Count = c(2, 2),
+        stringsAsFactors = FALSE
+    )
+    rownames(result_df) <- c("ID001", "ID002")
 
-  # Stub DOSE::geneInCategory
-  orig_gic <- get("geneInCategory", envir = asNamespace("DOSE"))
-  unlockBinding("geneInCategory", asNamespace("DOSE"))
-  assign("geneInCategory", function(x) {
-    expect_identical(x, gr)
-    geneSets
-  }, envir = asNamespace("DOSE"))
-  lockBinding("geneInCategory", asNamespace("DOSE"))
+    mock_result <- new("enrichResult",
+                       result = result_df,
+                       pvalueCutoff = 0.05,
+                       pAdjustMethod = "BH",
+                       qvalueCutoff = 0.2,
+                       organism = "test",
+                       ontology = "test",
+                       gene = c("g1", "g2", "g3", "g4"),
+                       keytype = "SYMBOL",
+                       universe = character(0),
+                       geneSets = list(
+                           ID001 = c("g1", "g2"),
+                           ID002 = c("g3", "g4")
+                       ),
+                       readable = FALSE)
 
-  on.exit({
-    unlockBinding("geneInCategory", asNamespace("DOSE"))
-    assign("geneInCategory", orig_gic, envir = asNamespace("DOSE"))
-    lockBinding("geneInCategory", asNamespace("DOSE"))
-  }, add = TRUE)
+    result <- .extractGeneSets(mock_result, 1)
 
-  out <- .extractGeneSets(gr, showCategory = showChar)
-  expect_identical(out, expected_df)
-})
-
-test_that(".extractGeneSets errors when character showCategory not found", {
-  gr       <- make_dummyGsea(ids = c("M"), descs = c("DescM"))
-  geneSets <- list(M = c("gm"))
-
-  # Stub DOSE::geneInCategory
-  orig_gic <- get("geneInCategory", envir = asNamespace("DOSE"))
-  unlockBinding("geneInCategory", asNamespace("DOSE"))
-  assign("geneInCategory", function(x) geneSets, envir = asNamespace("DOSE"))
-  lockBinding("geneInCategory", asNamespace("DOSE"))
-
-  on.exit({
-    unlockBinding("geneInCategory", asNamespace("DOSE"))
-    assign("geneInCategory", orig_gic, envir = asNamespace("DOSE"))
-    lockBinding("geneInCategory", asNamespace("DOSE"))
-  }, add = TRUE)
-
-  expect_error(
-    .extractGeneSets(gr, showCategory = "NotThere"),
-    regexp = "cannot be found"
-  )
+    expect_equal(names(result), "Pathway A")
+    expect_equal(result[[1]], c("g1", "g2"))
 })
