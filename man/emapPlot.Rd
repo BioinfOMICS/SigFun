@@ -90,8 +90,8 @@ Visual encoding follows the SigFun design standard:
 }
 }
 \note{
-Requires \pkg{enrichplot} (>= 1.21.0) and \pkg{ggtangle} (>= 1.0.0)
-for consistent network visualization behavior.
+Requires \pkg{ggfun} for \code{\%<+\%\%}. The enrichment map graph is built
+internally (to avoid relying on non-exported upstream functions).
 }
 \examples{
 data("sig2Fun_result")

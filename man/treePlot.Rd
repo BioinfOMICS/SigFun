@@ -15,7 +15,8 @@ treePlot(
   leafFontSize = 3,
   cladeFontSize = 2.5,
   hilightParams = list(hilight = TRUE, align = "both"),
-  offsetParams = list(barTree = rel(1.3), tiplab = rel(1.5), extend = 0.3, hexpand = 0.1),
+  offsetParams = list(barTree = ggplot2::rel(1.3), tiplab = ggplot2::rel(1.5), extend =
+    0.3, hexpand = 0.1),
   clusterParams = list(method = "ward.D", n = 5, color = NULL, labelWordsN = 0,
     labelFormat = 30)
 )
@@ -119,7 +120,7 @@ core genes per pathway.
 \examples{
 data("sig2Fun_result")
 treePlot(seDataFgsea = sig2Fun_result,
-          showCategory = 10,
-          dotColor = "pvalue",
-          hclustfun = "ward.D")
+         showCategory = 10,
+         dotColor = "pvalue",
+         hclustfun = "ward.D")
 }

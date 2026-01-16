@@ -60,10 +60,7 @@ combined \code{aplot::gglist} object when multiple subplots are rendered.
 \description{
 The \code{gseaPlot} function generates a publication-quality
 visualization of Gene Set Enrichment Analysis (GSEA) results from a
-\code{SummarizedExperiment} object. It wraps and extends
-\code{enrichplot::gseaplot2()} with additional control over layout,
-color palette, font size, subplot arrangement, and significance table
-display options.
+\code{SummarizedExperiment} object.
 }
 \details{
 This function produces a comprehensive visualization combining the

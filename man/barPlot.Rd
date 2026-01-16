@@ -70,7 +70,7 @@ depending on the selected \code{x} parameter.
 (e.g., p-value, adjusted p-value, or q-value).
 \item \code{neg_log_alpha}: The transformed significance level
 calculated as \code{-log10(alpha)}.
-\item \code{alpha_value}: Rescaled transparency value ranging from 0–1,
+\item \code{alpha_value}: Rescaled transparency value ranging from 0-1,
 used for plotting alpha intensity.
 }}
 }

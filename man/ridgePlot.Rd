@@ -80,5 +80,5 @@ Visual encoding:
 }
 \examples{
 data("sig2Fun_result")
-ridgePlot(seDataFgsea = sig2Fun_result)s
+ridgePlot(seDataFgsea = sig2Fun_result)
 }

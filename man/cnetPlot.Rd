@@ -81,7 +81,7 @@ their associated pathway. Default is \code{"grey80"}.}
 (opacity = 1). Non-highlighted nodes will have reduced opacity controlled
 by \code{hilightAlpha}. Default is \code{"none"}.}
 
-\item{hilightAlpha}{Numeric. Transparency level (0–1) for non-highlighted
+\item{hilightAlpha}{Numeric. Transparency level (0-1) for non-highlighted
 nodes. Default is \code{0.3}.}
 
 \item{seed}{Integer or \code{NULL}. Random seed for reproducible layout
